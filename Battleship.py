@@ -16,7 +16,10 @@ enemyBoardR = createBoard()
 enemyBoardF = createBoard()
 userPieces = battleships()
 enemyPieces = battleships()
-
+playerHits = 0
+playerMisses = 0
+enemyHits = 0
+enemyMisses = 0
 
 def mainMenu():
 	# I know it looks bad but curses was giving me issues with spacing
@@ -38,7 +41,7 @@ def mainMenu():
 		event = screen.getch() 
 		if event == ord(str(1)): 
 			screen.clear()
-			placePieces()
+			return
 		if event == ord(str(2)):
 			screen.clear()
 			credits()
@@ -85,86 +88,30 @@ def placePieces():
 	patrolBoat = ship(coords)
 	placePiecesLoop(patrolBoat, x, y)
 
-	enemyPiecePlacer()
-
-def enemyPiecePlacer():
-
-	placeEnemyShip(5)
-	placeEnemyShip(4)
-	placeEnemyShip(3)
-	placeEnemyShip(3)
-	placeEnemyShip(2)
-	printBoard(enemyBoardR, screen, 0, 0)
-	event = screen.getch() 
-
-def placeEnemyShip(shipLength):
-
-	while True:
-		x = randint(1, 10)
-		y = randint(1, 10)
-		right = choice([True, False])
-		
-		if not right and (x >= (7 + (5 - shipLength))):
-			continue
-		elif x == 10 or y == 10:
-			continue
-		elif right and (y >= (7 + (5 - shipLength))):
-			continue
-		
-		if enemyBoardR[x][y] != 'O':
-			continue
-
-		for w in range(0, 2):
-			testx = x
-			testy = y
-
-			for z in range(0, shipLength):
-				if enemyBoardR[testx][testy] != 'O' and w == 0:
-					continue
-				elif w == 1:
-					enemyBoardR[testx][testy] = shipLength
-				if right:
-					testy = testy + 1
-				else:
-					testx = testx + 1
-
-		coords = []
-		y = (2 * y) + 1
-
-		coords.append(coordinate(y, x))
-		screen.addstr(x, y, str(shipLength))
-		
-		for z in range(0, shipLength):
-			screen.addstr(x, y, str(shipLength))
-			coords.append(coordinate(y, x))
-
-		enemyPieces.addShip(ship(coords))
-
-		break
-
+	return
 
 def placePiecesLoop(boat, x, y):
 	
 	printBoard(userBoard, screen, 0, 0)
-	screen.addstr("\n   Place your {0}\n   Press 'R' to Rotate, 'E' to place".format(shipName(boat.length)))
+	screen.addstr("\n   Place your {0}\n   Press 'R' to Rotate, \n\'WASD\' to move and E' to place".format(shipName(boat.length)))
 	screen.move(y, x)
 
 	boat.printShip(y, x, userBoard, screen)	
 	while True: 
 		event = screen.getch() 
-		if event == ord('w'): 
+		if event == ord('w') or event == ord('W'): 
 			if (y != 1):
 				y = y - 1
 			boat.printShip(y, x, userBoard, screen)
-		elif event == ord('a'): 
+		elif event == ord('a') or event == ord('A'): 
 			if (x != 3):
 				x = x - 2 
 			boat.printShip(y, x, userBoard, screen)
-		elif event == ord('s'): 
+		elif event == ord('s') or event == ord('S'): 
 			if ((y != 10 and boat.right) or (y != (6 + (5 - boat.length)) and not boat.right)):
 				y = y + 1
 			boat.printShip(y, x, userBoard, screen)
-		elif event == ord('d'): 
+		elif event == ord('d') or event == ord('D'): 
 			if ((x != 21 and not boat.right) or (x != (13 + 2 * (5 - boat.length)) and boat.right)):
 				x = x + 2
 			boat.printShip(y, x, userBoard, screen)
@@ -201,9 +148,78 @@ def placePiecesLoop(boat, x, y):
 			curses.endwin()
 			quit(1)
 
+
+def enemyPiecePlacer():
+	placeEnemyShip(5)
+	placeEnemyShip(4)
+	placeEnemyShip(3)
+	placeEnemyShip(3)
+	placeEnemyShip(2)
+
+def placeEnemyShip(shipLength):
+	while True:
+		x = randint(1, 10)
+		y = randint(1, 10)
+		right = choice([True, False])
+		
+		if not right and (x >= (6 + (5 - shipLength))):
+			continue
+		elif x == 10 or y == 10:
+			continue
+		elif right and (y >= (6 + (5 - shipLength))):
+			continue
+		
+		if enemyBoardR[x][y] != 'O':
+			continue
+
+		if not isValidPlacement(enemyBoardR, x, y, right, shipLength):
+			continue
+
+		testx = x
+		testy = y
+
+		for z in range(0, shipLength):
+			enemyBoardR[testx][testy] = str(shipLength)
+
+			if right:
+				testy = testy + 1
+			else:
+				testx = testx + 1
+
+		coords = []
+		y = (2 * y) + 1
+		coords.append(coordinate(y, x))
+		
+		for z in range(0, shipLength):
+			coords.append(coordinate(y, x))
+
+		enemyPieces.addShip(ship(coords))
+		break
+
+def printGame():
+	screen.clear()
+	printBoard(enemyBoardR, screen, 0, 0)
+	screen.addstr("\n  P1 M:{0} H:{1} CP M:{2} H:{3}\n\n".format(playerMisses, playerHits, enemyMisses, enemyHits))
+	printBoard(userBoard, screen, 15, 0)
+
+	screen.addstr("\n Press \'E\' to send missile and \n \'WASD\' to move")
+	screen.move(6,13)
+
+
+
+def playGame():
+	return
+
 def main():
 	mainMenu()
-	#playGame()
+	placePieces()
+	enemyPiecePlacer()
+	printGame()
+
+	while True: 
+		event = screen.getch() 
+		curses.endwin()
+		quit(1)
 
 if __name__ == "__main__":
 	main()
