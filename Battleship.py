@@ -61,7 +61,7 @@ def credits(screen):
 def placePieces(screen):
 	x = 3
 	y = 1
-	eneymyBoardV, enemyBoardI, userBoard = createBoards()
+	userBoard = createBoard()
 
 	userPieces = battleships()
 
@@ -81,7 +81,19 @@ def placePieces(screen):
 	coords = [coordinate(y, x), coordinate(y, x + 2)]
 	patrolBoat = ship(coords)
 	placePiecesLoop(screen, patrolBoat, x, y, userBoard, userPieces)
+
+	enemyPiecePlacer(screen, userBoard)
+
+def enemyPiecePlacer(screen, userBoard):
+	enemyBoard = createBoard()
+
+	printBoard(userBoard, screen, 0, 0)
+	printBoard(enemyBoard, screen, 25, 0)
+
+	'''
 	screen.move(20, 20)
+	screen.addstr("userBoard")
+	
 	for x in range (0, 5):
 		rShip = userPieces.ships[x]
 		screen.addstr(str(rShip.length) + "\n")
@@ -89,6 +101,18 @@ def placePieces(screen):
 		for i in range (0, rShip.length):
 			screen.addstr("{0} X: {1} Y: {2}".format(i, rShip.coords[i].x, rShip.coords[i].y))
 		screen.addstr("\n")
+
+	screen.addstr("enemyBoard")
+	for x in range (0, 5):
+		rShip = userPieces.ships[x]
+		screen.addstr(str(rShip.length) + "\n")
+
+		for i in range (0, rShip.length):
+			screen.addstr("{0} X: {1} Y: {2} -- ".format(i, rShip.coords[i].x, rShip.coords[i].y))
+		screen.addstr("\n")
+	'''
+	while True: 
+		event = screen.getch() 
 
 def placePiecesLoop(screen, boat, x, y, userBoard, userPieces):
 	
@@ -148,4 +172,8 @@ def placePiecesLoop(screen, boat, x, y, userBoard, userPieces):
 			curses.endwin()
 			quit(1)
 
-mainMenu(screen)
+def main():
+	mainMenu(screen)
+
+if __name__ == "__main__":
+	main()
