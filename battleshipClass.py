@@ -23,8 +23,12 @@ class battleships:
 		self.ships.append(ship)
 
 	def hitMiss(self, coord):
-		for x in range (0, 5):
-			ships[x].hitMiss(coord)
+		for x in range (0, len(self.ships)):
+			hit = self.ships[x].hitMiss(coord)
+			if hit:
+				return True
+
+		return False
 
 class ship:
 	def __init__(self, coords):
@@ -53,20 +57,31 @@ class ship:
 
 	def hitMiss(self, coord):
 		for x in range (0, self.length):
-			if coord == coords[x] and coords[x].alive == True:
+			if coord == self.coords[x] and self.coords[x].alive == True:
 				hits = hits + 1
 
 				if hits == self.length:
 					print "BLOW UP FUNCTION"
 
-				return true
-		return false
+				return True
+		return False
 
 class coordinate:
 	def __init__(self, y, x):
 		self.x = x
 		self.y = y
 		self.alive = True
+
+def isValidPlacement(board, x, y, right, shipLength):
+	for z in range(0, shipLength):
+		if board[x][y] != 'O':
+			return False
+
+		if right:
+			y = y + 1
+		else:
+			x = x + 1
+	return True
 
 def printBoard(board, screen, x, y):
 	screen.move(x, y)
