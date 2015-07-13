@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*- 
+
 # I was going to call this file BattleshipSchool because that's where we 
 # Keep the battleship classes, but I'm too mature for that kind of stuff
 
@@ -70,7 +73,7 @@ def printBoard(board, screen, x, y):
 	for i in range(0,12):
 		screen.addstr(' ')
 		for j in range(0,12):
-			screen.addstr(board[i][j] + ' ')
+			screen.addstr(str(board[i][j]) + ' ')
 		screen.addstr('\n')
 
 # Clearly the most efficient way to create the boards

@@ -5,14 +5,20 @@ import curses
 import time
 import battleshipClass
 from battleshipClass import *
+from random import randint, choice
 
 screen = curses.initscr() 
 curses.noecho() 
 curses.curs_set(2) 
 screen.keypad(1) 
+userBoard = createBoard()
+enemyBoardR = createBoard()
+enemyBoardF = createBoard()
+userPieces = battleships()
+enemyPieces = battleships()
 
 
-def mainMenu(screen):
+def mainMenu():
 	# I know it looks bad but curses was giving me issues with spacing
 	Menu =        "  +======================+\n"
 	Menu = Menu + "  |                      |\n"
@@ -32,15 +38,15 @@ def mainMenu(screen):
 		event = screen.getch() 
 		if event == ord(str(1)): 
 			screen.clear()
-			placePieces(screen)
+			placePieces()
 		if event == ord(str(2)):
 			screen.clear()
-			credits(screen)
+			credits()
 		if event == ord(str(3)):
 			curses.endwin()
 			quit(1)
 
-def credits(screen):
+def credits():
 	Credits = "\n   Author: JJ Lowe\n   Email: joshuajordanlowe@gmail.com\n   Github: THEMVFFINMAN\n\n"
 	Credits = Credits + "    1. Main Menu \n"
 	Credits = Credits + "    2. Quit\n\n"
@@ -53,68 +59,91 @@ def credits(screen):
 		event = screen.getch() 
 		if event == ord(str(1)): 
 			screen.clear()
-			mainMenu(screen)
+			mainMenu()
 		if event == ord(str(2)):
 			curses.endwin()
 			quit(1)
 
-def placePieces(screen):
+def placePieces():
 	x = 3
 	y = 1
-	userBoard = createBoard()
-
-	userPieces = battleships()
 
 	coords = [coordinate(y, x), coordinate(y, x + 2), coordinate(y, x + 4), coordinate(y, x + 6), coordinate(y, x + 8)]
 	aircraft = ship(coords)
-	placePiecesLoop(screen, aircraft, x, y, userBoard, userPieces)
+	placePiecesLoop(aircraft, x, y,)
 
 	coords = [coordinate(y, x), coordinate(y, x + 2), coordinate(y, x + 4), coordinate(y, x + 6)]
 	battleship = ship(coords)
-	placePiecesLoop(screen, battleship, x, y, userBoard, userPieces)
+	placePiecesLoop(battleship, x, y)
 
 	coords = [coordinate(y, x), coordinate(y, x + 2), coordinate(y, x + 4)]
 	submarine = ship(coords)
-	placePiecesLoop(screen, submarine, x, y, userBoard, userPieces)
-	placePiecesLoop(screen, submarine, x, y, userBoard, userPieces)
+	placePiecesLoop(submarine, x, y)
+	placePiecesLoop(submarine, x, y)
 
 	coords = [coordinate(y, x), coordinate(y, x + 2)]
 	patrolBoat = ship(coords)
-	placePiecesLoop(screen, patrolBoat, x, y, userBoard, userPieces)
+	placePiecesLoop(patrolBoat, x, y)
 
-	enemyPiecePlacer(screen, userBoard)
+	enemyPiecePlacer()
 
-def enemyPiecePlacer(screen, userBoard):
-	enemyBoard = createBoard()
+def enemyPiecePlacer():
 
-	printBoard(userBoard, screen, 0, 0)
-	printBoard(enemyBoard, screen, 25, 0)
+	placeEnemyShip(5)
+	placeEnemyShip(4)
+	placeEnemyShip(3)
+	placeEnemyShip(3)
+	placeEnemyShip(2)
+	printBoard(enemyBoardR, screen, 0, 0)
+	event = screen.getch() 
 
-	'''
-	screen.move(20, 20)
-	screen.addstr("userBoard")
-	
-	for x in range (0, 5):
-		rShip = userPieces.ships[x]
-		screen.addstr(str(rShip.length) + "\n")
+def placeEnemyShip(shipLength):
 
-		for i in range (0, rShip.length):
-			screen.addstr("{0} X: {1} Y: {2}".format(i, rShip.coords[i].x, rShip.coords[i].y))
-		screen.addstr("\n")
+	while True:
+		x = randint(1, 10)
+		y = randint(1, 10)
+		right = choice([True, False])
+		
+		if not right and (x >= (7 + (5 - shipLength))):
+			continue
+		elif x == 10 or y == 10:
+			continue
+		elif right and (y >= (7 + (5 - shipLength))):
+			continue
+		
+		if enemyBoardR[x][y] != 'O':
+			continue
 
-	screen.addstr("enemyBoard")
-	for x in range (0, 5):
-		rShip = userPieces.ships[x]
-		screen.addstr(str(rShip.length) + "\n")
+		for w in range(0, 2):
+			testx = x
+			testy = y
 
-		for i in range (0, rShip.length):
-			screen.addstr("{0} X: {1} Y: {2} -- ".format(i, rShip.coords[i].x, rShip.coords[i].y))
-		screen.addstr("\n")
-	'''
-	while True: 
-		event = screen.getch() 
+			for z in range(0, shipLength):
+				if enemyBoardR[testx][testy] != 'O' and w == 0:
+					continue
+				elif w == 1:
+					enemyBoardR[testx][testy] = shipLength
+				if right:
+					testy = testy + 1
+				else:
+					testx = testx + 1
 
-def placePiecesLoop(screen, boat, x, y, userBoard, userPieces):
+		coords = []
+		y = (2 * y) + 1
+
+		coords.append(coordinate(y, x))
+		screen.addstr(x, y, str(shipLength))
+		
+		for z in range(0, shipLength):
+			screen.addstr(x, y, str(shipLength))
+			coords.append(coordinate(y, x))
+
+		enemyPieces.addShip(ship(coords))
+
+		break
+
+
+def placePiecesLoop(boat, x, y):
 	
 	printBoard(userBoard, screen, 0, 0)
 	screen.addstr("\n   Place your {0}\n   Press 'R' to Rotate, 'E' to place".format(shipName(boat.length)))
@@ -173,7 +202,8 @@ def placePiecesLoop(screen, boat, x, y, userBoard, userPieces):
 			quit(1)
 
 def main():
-	mainMenu(screen)
+	mainMenu()
+	#playGame()
 
 if __name__ == "__main__":
 	main()
