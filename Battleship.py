@@ -81,8 +81,14 @@ def placePieces(screen):
 	coords = [coordinate(y, x), coordinate(y, x + 2)]
 	patrolBoat = ship(coords)
 	placePiecesLoop(screen, patrolBoat, x, y, userBoard, userPieces)
+	screen.move(20, 20)
+	for x in range (0, 5):
+		rShip = userPieces.ships[x]
+		screen.addstr(str(rShip.length) + "\n")
 
-	print userPieces
+		for i in range (0, rShip.length):
+			screen.addstr("{0} X: {1} Y: {2}".format(i, rShip.coords[i].x, rShip.coords[i].y))
+		screen.addstr("\n")
 
 def placePiecesLoop(screen, boat, x, y, userBoard, userPieces):
 	
