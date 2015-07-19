@@ -16,10 +16,12 @@ enemyBoardR = createBoard()
 enemyBoardF = createBoard()
 userPieces = battleships()
 enemyPieces = battleships()
+over = False
 playerHits = 0
 playerMisses = 0
 enemyHits = 0
 enemyMisses = 0
+hitData = ""
 
 def mainMenu():
 	# I know it looks bad but curses was giving me issues with spacing
@@ -68,8 +70,8 @@ def credits():
 			quit(1)
 
 def placePieces():
-	x = 3
-	y = 1
+	x = 4
+	y = 2
 
 	coords = [coordinate(y, x), coordinate(y, x + 2), coordinate(y, x + 4), coordinate(y, x + 6), coordinate(y, x + 8)]
 	aircraft = ship(coords)
@@ -93,39 +95,39 @@ def placePieces():
 def placePiecesLoop(boat, x, y):
 	
 	printBoard(userBoard, screen, 0, 0)
-	screen.addstr("\n   Place your {0}\n   Press 'R' to Rotate, \n\'WASD\' to move and E' to place".format(shipName(boat.length)))
+	screen.addstr("\n  Place your {0}\n  Press 'R' to Rotate, \n  'WASD' to move and 'E' to place".format(shipName(boat.length)))
 	screen.move(y, x)
 
 	boat.printShip(y, x, userBoard, screen)	
 	while True: 
 		event = screen.getch() 
 		if event == ord('w') or event == ord('W'): 
-			if (y != 1):
+			if (y != 2):
 				y = y - 1
 			boat.printShip(y, x, userBoard, screen)
 		elif event == ord('a') or event == ord('A'): 
-			if (x != 3):
+			if (x != 4):
 				x = x - 2 
 			boat.printShip(y, x, userBoard, screen)
 		elif event == ord('s') or event == ord('S'): 
-			if ((y != 10 and boat.right) or (y != (6 + (5 - boat.length)) and not boat.right)):
+			if ((y != 11 and boat.right) or (y != (7 + (5 - boat.length)) and not boat.right)):
 				y = y + 1
 			boat.printShip(y, x, userBoard, screen)
 		elif event == ord('d') or event == ord('D'): 
-			if ((x != 21 and not boat.right) or (x != (13 + 2 * (5 - boat.length)) and boat.right)):
+			if ((x != 22 and not boat.right) or (x != (14 + 2 * (5 - boat.length)) and boat.right)):
 				x = x + 2
 			boat.printShip(y, x, userBoard, screen)
 		elif event == ord('r'):
-			if (y <= (6 + (5 - boat.length)) and boat.right):
+			if (y <= (7 + (5 - boat.length)) and boat.right):
 				boat.right = False
-			elif (x <= (13 + 2 * (5 - boat.length)) and not boat.right):
+			elif (x <= (14 + 2 * (5 - boat.length)) and not boat.right):
 				boat.right = True
 			boat.printShip(y, x, userBoard, screen)
 		elif event == ord('e'):
 			interlap = False
 			for i in range(0, boat.length):
-				x2 = boat.coords[i][0]
-				y2 = boat.coords[i][1]
+				x2 = boat.coords[i][0] - 1
+				y2 = boat.coords[i][1] - 1
 				realY = (y2 - (y2 - 1)/2) - 1
 				if userBoard[x2][realY] != 'O':
 					interlap = True
@@ -133,8 +135,8 @@ def placePiecesLoop(boat, x, y):
 			if not interlap:
 				coords = []
 				for i in range(0, boat.length):
-					x2 = boat.coords[i][0]
-					y2 = boat.coords[i][1]
+					x2 = boat.coords[i][0] - 1
+					y2 = boat.coords[i][1] - 1
 					realY = (y2 - (y2 - 1)/2) - 1
 					userBoard[x2][realY] = str(boat.length)
 					coords.append(coordinate(realY, x))
@@ -177,34 +179,119 @@ def placeEnemyShip(shipLength):
 
 		testx = x
 		testy = y
+		coords = []
 
 		for z in range(0, shipLength):
 			enemyBoardR[testx][testy] = str(shipLength)
-
+			coords.append(coordinate(testy, testx))
 			if right:
 				testy = testy + 1
 			else:
 				testx = testx + 1
 
-		coords = []
-		y = (2 * y) + 1
-		coords.append(coordinate(y, x))
-		
-		for z in range(0, shipLength):
-			coords.append(coordinate(y, x))
-
 		enemyPieces.addShip(ship(coords))
 		break
 
-def printGame():
+def printGame(endGame):
 	screen.clear()
 	printBoard(enemyBoardR, screen, 0, 0)
-	screen.addstr("\n  P1 M:{0} H:{1} CP M:{2} H:{3}\n\n".format(playerMisses, playerHits, enemyMisses, enemyHits))
-	printBoard(userBoard, screen, 15, 0)
+	screen.addstr("\n{0}\n\n   P1 M:{1} H:{2} CP M:{3} H:{4}\n\n\n".format(hitData, playerMisses, playerHits, enemyMisses, enemyHits))
+	printBoard(userBoard, screen, 19, 0)
+	if not endGame:
+		screen.addstr("\n Press \'E\' to send missile and \n \'WASD\' to move, \'Q\' to quit")
+		screen.move(6,13)
+	else:
+		screen.addstr("\n   Press any key to exit")
 
-	screen.addstr("\n Press \'E\' to send missile and \n \'WASD\' to move")
-	screen.move(6,13)
+def makeGuess(x, y):
+	screen.move(y, x)
+	while True: 
+		event = screen.getch() 
+		if event == ord('w') or event == ord('W'): 
+			if y != 2:
+				y = y - 1
+			screen.move(y,x)
+		elif event == ord('a') or event == ord('A'): 
+			if x != 4:
+				x = x - 2 
+			screen.move(y,x)
+		elif event == ord('s') or event == ord('S'): 
+			if y != 11:
+				y = y + 1
+			screen.move(y,x)
+		elif event == ord('d') or event == ord('D'): 
+			if x != 22:
+				x = x + 2
+			screen.move(y,x)
+		elif event == ord('e') or event == ord('E'):
+			attack(x, y)
+		elif event == ord('q') or event == ord('Q'):
+			curses.endwin()
+			quit(1)
 
+def attack(x, y):
+	global hitData
+	global playerHits
+
+	oldX = x
+	oldY = y
+
+	x = (x - 3)/2 + 1
+	y = y - 1
+	if enemyBoardR[y][x] != 'X':
+		hitData = enemyPieces.hitMiss(y, x)
+		if hitData == True:
+			hitData = "\t  Hit!! {0}{1}".format(chr(y + 64), x)
+		elif hitData == False:
+			hitData = "\t  Miss! {0}{1}".format(chr(y + 64), x)
+		enemyBoardR[y][x] = 'X'
+		playerHits = playerHits + 1
+		if playerHits == 4:
+			gameWin(False)
+	else:
+		hitData = "     Already Marked {0}{1}".format(chr(y + 64), x)
+	printGame(False)
+	printShipCoordinates(enemyPieces)
+	makeGuess(oldX, oldY)
+
+def printShipCoordinates(battleships):
+	screen.move(34,6)
+	for ship in battleships.ships:
+		screen.addstr(str(shipName(ship.length)) + '\n')
+		x = 0
+		for coord in ship.coords:
+			screen.addstr("{0}: x:{1} y:{2}\t".format(str(x), str(coord.x), str(coord.y)))
+			x = x + 1
+		screen.addstr("\n\n")
+
+def gameWin(playerWon):
+	curses.curs_set(0) 
+	global hitData
+
+	if playerWon:
+		hitData = "   Player Won the Game!"
+	else:
+		hitData = "  Computer Won the Game!"
+
+	printGame(True)
+	z = 2
+
+	for q in range (0, 2):
+		screen.move(z, 4)
+		for j in range(0, 10):
+			for i in range(0, 10):
+				if i == 9:
+					screen.addstr("X")
+				else:
+					screen.addstr("X ")
+			z = z + 1
+			screen.move(z, 4)
+
+		z = 21
+	
+	event = screen.getch() 
+	curses.endwin()
+	quit(1)
 
 
 def playGame():
@@ -214,7 +301,8 @@ def main():
 	mainMenu()
 	placePieces()
 	enemyPiecePlacer()
-	printGame()
+	printGame(False)
+	makeGuess(14, 7)
 
 	while True: 
 		event = screen.getch() 
