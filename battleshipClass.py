@@ -22,12 +22,10 @@ class battleships:
 		
 		self.ships.append(ship)
 
-	def hitMiss(self, coord):
-		for x in range (0, len(self.ships)):
-			hit = self.ships[x].hitMiss(coord)
-			if hit:
+	def hitMiss(self, y, x):
+		for ship in self.ships:
+			if ship.hitMiss(y, x):
 				return True
-
 		return False
 
 class ship:
@@ -38,6 +36,14 @@ class ship:
 			self.coords.append(coordinate(coords[i].x, coords[i].y))
 		self.hits = 0
 		self.right = True
+
+	def hitMiss(self, y, x):
+		for z in range(0, self.length):
+			if self.coords[z].x == x and self.coords[z].y == y:
+				self.coords[z].alive = False
+				return True
+
+		return False
 
 	def printShip(self, y, x, userBoard, screen):
 		screen.move(y, x)
@@ -54,17 +60,6 @@ class ship:
 			screen.addstr(self.coords[i][0], self.coords[i][1], str(self.length))
 		screen.move(y, x)
 		screen.refresh()
-
-	def hitMiss(self, coord):
-		for x in range (0, self.length):
-			if coord == self.coords[x] and self.coords[x].alive == True:
-				hits = hits + 1
-
-				if hits == self.length:
-					print "BLOW UP FUNCTION"
-
-				return True
-		return False
 
 class coordinate:
 	def __init__(self, y, x):
@@ -86,26 +81,35 @@ def isValidPlacement(board, x, y, right, shipLength):
 def printBoard(board, screen, x, y):
 	screen.move(x, y)
 	for i in range(0,12):
+		if i == 1:
+			screen.addstr('    ___________________\n')
+		elif i == 11:
+			screen.addstr('    ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯\n')
 		screen.addstr(' ')
 		for j in range(0,12):
-			screen.addstr(str(board[i][j]) + ' ')
+			if j == 1 and i != 0 and i != 11:
+				screen.addstr('|')
+			if j == 10 and i != 0 and i != 11:
+				screen.addstr(str(board[i][j]) + '| ')
+			else:
+				screen.addstr(str(board[i][j]) + ' ')
 		screen.addstr('\n')
 
 # Clearly the most efficient way to create the boards
 def createBoard():
 	
-	board = [	['+', '=', '=', '=', '=', '=', '=', '=', '=', '=', '=', '+'],
-				['|', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', '|'],
-				['|', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', '|'],
-				['|', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', '|'],
-				['|', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', '|'],
-				['|', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', '|'],
-				['|', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', '|'],
-				['|', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', '|'],
-				['|', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', '|'],
-				['|', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', '|'],
-				['|', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', '|'],
-				['+', '=', '=', '=', '=', '=', '=', '=', '=', '=', '=', '+']
+	board = [	['+', ' 1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '+'],
+				['A', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'A'],
+				['B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B'],
+				['C', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'C'],
+				['D', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'D'],
+				['E', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'E'],
+				['F', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'F'],
+				['G', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'G'],
+				['H', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'H'],
+				['I', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'I'],
+				['J', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'J'],
+				['+', ' 1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '+']
 			]
 
 	return board
