@@ -93,7 +93,8 @@ def placePieces():
 	return
 
 def placePiecesLoop(boat, x, y):
-	
+	global userPieces
+
 	printBoard(userBoard, screen, 0, 0)
 	screen.addstr("\n  Place your {0}\n  Press 'R' to Rotate, \n  'WASD' to move and 'E' to place".format(shipName(boat.length)))
 	screen.move(y, x)
@@ -139,7 +140,7 @@ def placePiecesLoop(boat, x, y):
 					y2 = boat.coords[i][1] - 1
 					realY = (y2 - (y2 - 1)/2) - 1
 					userBoard[x2][realY] = str(boat.length)
-					coords.append(coordinate(realY, x))
+					coords.append(coordinate(realY, x2))
 
 				userPieces.addShip(ship(coords))
 
@@ -224,7 +225,7 @@ def makeGuess(x, y):
 				x = x + 2
 			screen.move(y,x)
 		elif event == ord('e') or event == ord('E'):
-			attack(x, y)
+			return attack(x, y)
 		elif event == ord('q') or event == ord('Q'):
 			curses.endwin()
 			quit(1)
@@ -242,17 +243,50 @@ def attack(x, y):
 		hitData = enemyPieces.hitMiss(y, x)
 		if hitData == True:
 			hitData = "\t  Hit!! {0}{1}".format(chr(y + 64), x)
+			playerHits = playerHits + 1
 		elif hitData == False:
 			hitData = "\t  Miss! {0}{1}".format(chr(y + 64), x)
 		enemyBoardR[y][x] = 'X'
-		playerHits = playerHits + 1
-		if playerHits == 4:
-			gameWin(False)
+		
+		if playerHits == 17:
+			gameWin(True)
+
+		printGame(False)
+		curses.curs_set(0) 
+		screen.move(16,0)
+		screen.addstr("  Press any key for AI hit")
+		event = screen.getch()
+		curses.curs_set(2) 
+		return (oldX, oldY)
+
 	else:
 		hitData = "     Already Marked {0}{1}".format(chr(y + 64), x)
+		printGame(False)
+		return makeGuess(oldX, oldY)
+
+def enemyGuess():
+	global hitData
+	global enemyHits
+
+	guessX = randint(1, 10)
+	guessY = randint(1, 10)
+	if userBoard[guessY][guessX] != 'X':
+		hitData = userPieces.hitMiss(guessY, guessX)
+		if hitData == True:
+			hitData = "        AI Hit!! {0}{1}".format(chr(guessY + 64), guessX)
+			enemyHits = enemyHits + 1
+		elif hitData == False:
+			hitData = "       AI Missed! {0}{1}".format(chr(guessY + 64), guessX)
+
+		userBoard[guessY][guessX] = 'X'
+
+		if enemyHits == 17:
+				gameWin(False)
+	else:
+		enemyGuess()
+		return
+
 	printGame(False)
-	printShipCoordinates(enemyPieces)
-	makeGuess(oldX, oldY)
 
 def printShipCoordinates(battleships):
 	screen.move(34,6)
@@ -302,7 +336,11 @@ def main():
 	placePieces()
 	enemyPiecePlacer()
 	printGame(False)
-	makeGuess(14, 7)
+	x, y = makeGuess(14, 7)
+
+	while True:
+		enemyGuess()
+		x, y = makeGuess(x, y)
 
 	while True: 
 		event = screen.getch() 
