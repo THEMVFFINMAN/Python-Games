@@ -20,8 +20,11 @@ over = False
 playerHits = 0
 playerMisses = 0
 enemyHits = 0
+enemyGuesses = []
 enemyMisses = 0
 hitData = ""
+backwards = False
+
 
 def mainMenu():
 	# I know it looks bad but curses was giving me issues with spacing
@@ -267,18 +270,70 @@ def attack(x, y):
 def enemyGuess():
 	global hitData
 	global enemyHits
+	global enemyGuesses
+	global backwards
 
 	guessX = randint(1, 10)
 	guessY = randint(1, 10)
+
+	screen.move(40, 0)
+	count = 0
+	for cork in enemyGuesses:
+		count = count + 1
+		#screen.addstr("{0} x: {1} y: {2} Alive: {3}\n".format(count, cork.x, cork.y, str(cork.alive)))
+
+	#event = screen.getch()
+	if len(enemyGuesses) > 0 and enemyGuesses[-1].alive == True:
+		if backwards == True:
+			guessX = guessX = enemyGuesses[-1].x - 1
+		else:
+			guessX = enemyGuesses[-1].x + 1
+		guessY = enemyGuesses[-1].y
+
+		if guessX == 11 or userBoard[guessY][guessX] == 'X':
+			guessX = enemyGuesses[-1].x - 2
+
+			if userBoard[guessY][guessX] == 'X':
+				guessX = enemyGuesses[-1].x + 1
+
+			if userBoard[guessY][guessX] == 'X':
+				guessX = randint(1, 10)
+				guessY = randint(1, 10)
+		elif guessX == 0:
+			guessX = randint(1, 10)
+			guessY = randint(1, 10)
+
+	elif len(enemyGuesses) > 1 and enemyGuesses[-2].alive == True and enemyGuesses[-1].alive == False:
+		guessX = enemyGuesses[-1].x
+		guessY = enemyGuesses[-1].y
+		backwards = True
+		while userBoard[guessY][guessX] == 'X':
+
+			guessX = guessX - 1
+			if guessX <= 0:
+				guessX = randint(1, 10)
+				guessY = randint(1, 10)
+				break
+
+	newCoord = coordinate(guessY, guessX)
+
 	if userBoard[guessY][guessX] != 'X':
 		hitData = userPieces.hitMiss(guessY, guessX)
 		if hitData == True:
 			hitData = "        AI Hit!! {0}{1}".format(chr(guessY + 64), guessX)
 			enemyHits = enemyHits + 1
+			enemyGuesses.append(newCoord)
 		elif hitData == False:
 			hitData = "       AI Missed! {0}{1}".format(chr(guessY + 64), guessX)
+			newCoord.alive = False
+			backwards = False
+			if len(enemyGuesses) > 0:
+				enemyGuesses.append(newCoord)
 
 		userBoard[guessY][guessX] = 'X'
+
+		if len(enemyGuesses) > 4 and enemyGuesses[-1].alive == False and enemyGuesses[-2].alive == False and enemyGuesses[-3].alive == False and enemyGuesses[-4].alive == False:
+			enemyGuesses = []
 
 		if enemyHits == 17:
 				gameWin(False)
