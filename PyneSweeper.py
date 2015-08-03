@@ -1,7 +1,15 @@
+import curses
 from random import randint
 
+# Setting up the curses screen
+screen = curses.initscr() 
+curses.noecho() 
+curses.curs_set(2) 
+screen.keypad(1) 
+
 def createBoard():
-	
+	#Clearly the most efficient way to initiate this
+
 	board = [	['+', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '+'],
 				['A', '_', '_', '_', '_', '_', '_', '_', '_', '_', '_', 'A'],
 				['B', '_', '_', '_', '_', '_', '_', '_', '_', '_', '_', 'B'],
@@ -18,153 +26,188 @@ def createBoard():
 
 	return board
 
-def setMines(secretBoard, board, x2, y2):
+def setMines(secretBoard, board, ox, oy):
+	# Will probably add setting to allow a prespecified mine amount
+
 	mines = 0
 
-	while mines <= 19:
-		x = randint(1,10)
-		y = randint(1,10)
+	# Making it so the screen and array play nice with each otehr
+	sy = oy - 6
+	sx = (ox-2)/2
 
-		if secretBoard[y][x] != "*" and not (x2 == x and y2 == y) :
-			secretBoard[y][x] = "*"
+	# The actual amount of mines
+	while mines <= 2:
+		rx = randint(1,10)
+		ry = randint(1,10)
+
+		# If the selected piece isn't a mine and it's not the imputted coordinate
+		if secretBoard[ry][rx] != "*" and not (sx == rx and sy == ry) :
+			secretBoard[ry][rx] = "*"
 			mines = mines + 1
 
-	for x in range(1, 11):
-		for y in range(1, 11):
+	# This goes through and figures the numbering out based on the surrounding mines
+	for lx in range(1, 11):
+		for ly in range(1, 11):
 			closeMines = 0
-			if secretBoard[x][y] != "*":
-				for x1 in range (-1, 2):
-					for y1 in range (-1, 2):
-						if secretBoard[x + x1][y + y1] == "*":
+			if secretBoard[lx][ly] != "*":
+				for lx1 in range (-1, 2):
+					for ly1 in range (-1, 2):
+						if secretBoard[lx + lx1][ly + ly1] == "*":
 							closeMines = closeMines + 1
 
-				secretBoard[x][y] = str(closeMines)
+				secretBoard[lx][ly] = str(closeMines)
 
-	board[y2][x2] = secretBoard[y2][x2]
-	if secretBoard[y2][x2] == "0":
-		cleanHouse(board, secretBoard, x2, y2)
+	screen.move(oy, ox)
+	screen.addstr(secretBoard[sy][sx])
+
+	board[sy][sx] = secretBoard[sy][sx]
+
+	if secretBoard[sy][sx] == "0":
+		cleanHouse(board, secretBoard, sx, sy)
+
+	screen.move(oy, ox)
 	return secretBoard, board
 
-def start():
+def start(board):
+	# This is the default screen
 	Menu =        "  +=====================+\n"
 	Menu = Menu + "  |                     |\n"
 	Menu = Menu + "  |     PyneSweeper     |\n"
 	Menu = Menu + "  |                     |\n"
 	Menu = Menu + "  +=====================+\n\n"
-		
-	print Menu
+	screen.move(0, 0)
+	screen.addstr(Menu)
+
+	printBoard(board)
+
+	screen.refresh()
 
 def printBoard(board):
 	for x in range (len(board)):
 		row = str(board[x])
-		print "  " + row.replace("\'", "").replace(",", "").replace("[", "").replace("]", "")
-		
+		prettyRow = "  " + row.replace("\'", "").replace(",", "").replace("[", "").replace("]", "") + '\n'
+		screen.addstr(prettyRow)
+
+	#formatting = "\n       'WASD' to move\n\t'E' to Step\n\t'F' to Flag\n\t'Q' to Quit"
+	#screen.addstr(20, 0, formatting)
+
 def printBoards(board1, board2):
 	printBoard(board1)
 	printBoard(board2)
 
-def getY(y):
-	y = ord(str(y).lower()) - 96
-	if y < 11 and y > 0:
-		return y
-	else:
-		return -1
-
-def validGuess(first):
-	while True:
-		flag = False
-
-		guess = raw_input("Guess = A1, b4, c8, etc.\nFlag = fb3, Fc6, fH7, etc.\n\n >> ")
-		if guess == "q" or guess == "Q":
-			exit(0)
-
-		if len(guess) != 2:
-			if len(guess) != 3:
-				continue
-			elif getY(guess[0]) == 6 and first == False:
-				guess = guess[1:len(guess)]
-				flag = True
-			else:
-				continue
-		y = getY(guess[0])
-		try:
-			x = int(guess[1])
-		except Exception, e:
-			continue
-		if y == -1:
-			continue
-		elif x < 0 or x > 9:
-			continue
-		if x == 0:
-			x = 10
-
-		return (x, y, flag)
-
 def cleanHouse(board, secretBoard, x, y):
-	# It's so pretty :')
+	# This is the recursive algorithm that opens up the field when a 0 is hit
+	# It was much prettier before I added the curses implementation :(
 
 	for x1 in range (-1, 2):
 		for y1 in range(-1, 2):
 
 			if board[y + y1][x + x1] == '_' and 0 < y + y1 < 11 and 0 < x + x1 < 11:
+				sx = ((x + x1) * 2) + 2
+				sy = (y + y1) + 6
+				screen.move(sy, sx)
+				screen.addstr(secretBoard[y + y1][x + x1])
 				board[y + y1][x + x1] = secretBoard[y + y1][x + x1]
 				if secretBoard[y + y1][x + x1] == "0":
 					cleanHouse(board, secretBoard, x + x1, y + y1)
 
-def main():
-	start()
+def makeGuess(x, y):
+	# This part is a test just for the first guess, could probably all be reworked later
+	if (x != -1 and y != -1):
+		screen.move(y, x)
+	else:
+		coord = curses.getsyx()
+		y = coord[0]
+		x = coord[1]
+
+	# Simple boundary checking
+	while True: 
+		event = screen.getch() 
+		if event == ord('w') or event == ord('W'): 
+			if y > 7:
+				y = y - 1
+			screen.move(y,x)
+		elif event == ord('a') or event == ord('A'): 
+			if x > 4:
+				x = x - 2
+			screen.move(y,x)
+		elif event == ord('s') or event == ord('S'): 
+			if y < 16:
+				y = y + 1
+			screen.move(y,x)
+		elif event == ord('d') or event == ord('D'): 
+			if x < 22:
+				x = x + 2
+			screen.move(y,x)
+		elif event == ord('e') or event == ord('E'):
+			return (x, y, False)
+		elif event == ord('f') or event == ord('F'):
+			return (x, y, True)
+		elif event == ord('q') or event == ord('Q'):
+			curses.endwin()
+			quit(1)
+
+def main():	
+	# Sets everything up including the first guess
 	board = createBoard()
-	printBoard(board)
 	secretBoard = createBoard()
-	x, y, flag = validGuess(True)
+	start(board)
+	x, y, flag = makeGuess(4, 7)
+
+	# Ensures you don't guess a bomb first try
 	secretBoard, board = setMines(secretBoard, board, x, y)
 
-	printBoard(board)
-
+	# The main loop
 	while True:
-		x, y, flag = validGuess(False)
-		if flag:
-			board[y][x] = "F"
-			if checkWin(board, secretBoard):
-				win(board)
-		elif secretBoard[y][x] != "*":
-			if secretBoard[y][x] != "0":
-				board[y][x] = secretBoard[y][x]
-			else:
-				board[y][x] = secretBoard[y][x]
+		sx, sy, flag = makeGuess(-1, -1)
+		x = (sx - 2) / 2
+		y = sy - 6
+		if flag and board[y][x] == '_':
+			board[y][x] = 'F'
+			screen.addstr('F')
+		elif secretBoard[y][x] != '*' and not flag:
+			screen.addstr(secretBoard[y][x])
+			board[y][x] = secretBoard[y][x]
+
+			if secretBoard[y][x] == '0':
 				cleanHouse(board, secretBoard, x, y)
-		else:
-			lose(board,secretBoard)
+				
+		elif not flag:
+			lose(secretBoard)
 
-		printBoard(board)
+		if checkWin(board):
+			win(secretBoard)
 
-def checkWin(board, secretBoard):
-	for x in range (1, 11):
+		screen.move(sy, sx)
+
+def checkWin(board):
+	screen.move(20,0)
+
+	for x in range(1, 11):
 		for y in range(1, 11):
-			if secretBoard[y][x] != board[y][x]:
-				if not (secretBoard[y][x] == "*" and board[y][x] == "F"):
-					return False
+			if board[y][x] == "_":
+				return False
 
 	return True
 
 def win(board):
-	for x in range(1, 11):
-		for y in range(1, 11):
-			if secretBoard[x][y] == "*":
-				board[x][y] = "X"
+	screen.move(6, 0)
 
 	printBoard(board)
-	print "\n You Winq!\n"
+
+	screen.addstr("\n          You Win!\n   Press any key to quit")
+	event = screen.getch() 
+	curses.endwin()
 	exit(1)
 
-def lose(board, secretBoard):
-	for x in range(1, 11):
-		for y in range(1, 11):
-			if secretBoard[x][y] == "*":
-				board[x][y] = "*"
+def lose(board):
+	screen.move(6, 0)
 
 	printBoard(board)
-	print "\n KABOOM!\n"
+
+	screen.addstr("\n          KABOOM!\n   Press any key to quit")
+	event = screen.getch() 
+	curses.endwin()
 	exit(1)
 
 if __name__ == "__main__":
