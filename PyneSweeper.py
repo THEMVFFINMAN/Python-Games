@@ -36,7 +36,7 @@ def setMines(secretBoard, board, ox, oy):
 	sx = (ox-2)/2
 
 	# The actual amount of mines
-	while mines <= 2:
+	while mines <= 14:
 		rx = randint(1,10)
 		ry = randint(1,10)
 
