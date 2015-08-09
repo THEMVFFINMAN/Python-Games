@@ -1,2 +1,5 @@
-# PyttleShip
-Battleship made with Python and the Unix curses library. Because of this, it only works with Unix right now. 
+# PythonGames
+
+A bunch of command line games based around the curses library. 
+-PyneSweeper - almost full working
+-PyttleShip - the AI isn't working right now
