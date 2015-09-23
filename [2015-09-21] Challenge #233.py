@@ -27,24 +27,27 @@ for line in f:
 rows = len(full)
 cols = len(full[0])
 
-picture = make2dList(((rows * 2) + 1), (cols * 5 - 3))
+picture = make2dList(((rows * 2) + 1), (cols * 5))
 centers = []
 
 for i in range(len(full)):
     for j in range(len(full[i])):
+
         if full[i][j] == '*':
             center = [(i * 2 + 1), (2 * (2 * (j + 1)) - 1)]
             centers.append(center)
 
             for k in range (-1, 2):
                 for l in range(-1, 2, 2):
-                    picture[center[0] + l][center[1] + k] = "-"
+                    if center[0] + l < len(picture) and center[1] + k < len(picture[0]):
+                        picture[center[0] + l][center[1] + k] = "-"
                     
             for k in range(-1, 2, 2):
                 for l in range(-2, 5, 4):
-                    picture[center[0] + k][center[1] - l] = "+"
-
-            picture[center[0]][center[1] + 2] = '|'
+                    if center[0] + k < len(picture) and center[1] - l < len(picture[0]):
+                        picture[center[0] + k][center[1] - l] = "+"
+            if center[1] + 2 < len(picture[0]):
+                picture[center[0]][center[1] + 2] = '|'
             picture[center[0]][center[1] - 2] = '|'
 
             if bool(random.getrandbits(1)):
@@ -56,12 +59,14 @@ for i in range(len(full)):
     for j in range(len(full[i])):
         if full[i][j] == '*':
             center = [(i * 2 + 1), (2 * (2 * (j + 1)) - 1)]
-            if picture[center[0] - 1][center[1] + 3] == '-':
-                picture2[center[0]][center[1] + 2] = ' '
+            if center[1] + 3 < len(picture[0]):
+                if picture[center[0] - 1][center[1] + 3] == '-':
+                    picture2[center[0]][center[1] + 2] = ' '
             if picture[center[0] - 3][center[1]] == "-":
                 picture2[center[0] - 1][center[1] - 1] = " "
                 picture2[center[0] - 1][center[1]] = " "
-                picture2[center[0] - 1][center[1] + 1] = " "
+                if center[1] + 1 < len(picture[0]):
+                    picture2[center[0] - 1][center[1] + 1] = " "
             
 for i in range(len(picture2)):
     for j in range(len(picture2[i])):
