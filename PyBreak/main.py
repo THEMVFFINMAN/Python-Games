@@ -23,10 +23,36 @@ paddleLength = 100
 
 ballX = (gameWidth/2 - 45)
 ballY = 600
-ballRadius = 4
+ballLength = 5
 ballAngle = 0
 ballSpeed = 1
 ballDirection = "DR"
+ballAngleX = 0
+ballAngleY = 2
+
+brickX = 200
+brickY = 200
+brickWidth = 200
+brickLength = 200
+
+bricks = []
+
+class RegularBrick(object):
+    def __init__(self, x, y, color, outline, length, width):
+        self.image = pygame.image.load('brick.png').convert()
+        self.rect = self.image.get_rect()
+        self.rect.left = x
+        self.rect.top = y
+        self.rect.width = width
+        self.rect.height = length
+        self.color = color
+        self.outline = outline
+        self.length = length
+        self.width = width
+        pygame.draw.rect(screen, color, [x, y, length, width], 0)
+
+    def updateDraw(self):
+        screen.blit(self.image, self.rect)
 
 class Paddle(object):
 
@@ -46,130 +72,151 @@ class Paddle(object):
             self.x = (gameWidth - paddle.length)
         elif (self.x < 0):
             self.x = 0
-        
+
         pygame.draw.rect(screen, self.color, [self.x, self.y, self.length, self.width], 0)
     
 
-class Ball(object):
+class Ball(pygame.sprite.Sprite):
 
-    def __init__(self, x, y, color, radius, angle, speed, direction):
-        self.x = x
-        self.y = y
+    def __init__(self, x, y, color, length, angle, speed, direction, angleX, angleY):
+        self.image = pygame.image.load('ball.png').convert()
+        self.rect = self.image.get_rect()
+        self.rect.left = x
+        self.rect.top = y
+        self.angleX = angleX
+        self.angleY = angleY
+        self.rect.width = length
+        self.rect.height = length
         self.color = color
-        self.radius = radius
         self.angle = angle
         self.speed = speed
+        self.oldDirection = direction
         self.direction = direction
-        pygame.draw.circle(screen, color, (x, y), radius, 0)
+        self.collision = False
+        self.changed = False
+        self.hit = False
+        screen.blit(self.image, self.rect)
 
     def updateDraw(self):
 
-        if self.x < 0 + self.radius:
+        self.oldDirection = self.direction
+        
+        if self.rect.left < 0 + self.rect.width/2:
             if self.direction == "UL":
                 self.direction = "UR"
             elif self.direction == "DL":
                 self.direction = "DR"
-        elif self.x > gameWidth - self.radius:
+        elif self.rect.left > gameWidth - self.rect.width/2:
             if self.direction == "UR":
                 self.direction = "UL"
             elif self.direction == "DR":
                 self.direction = "DL"
-        elif self.y < 0 + self.radius:
+        elif self.rect.top < 0 + self.rect.width/2:
             if self.direction == "UR":
                 self.direction = "DR"
             elif self.direction == "UL":
                 self.direction = "DL"
-        elif (self.y > gameHeight - self.radius) or ((self.x > paddle.x - self.radius - 1) and
-                                                     (self.x < paddle.x + paddle.length + self.radius + 1)
-                                                     and (self.y > paddle.y - self.radius - 1)
-                                                     and (self.y < paddle.y + paddle.width + self.radius)):
-            if (self.x < paddle.x + paddle.length):
+        elif (self.rect.top > gameHeight - self.rect.width/2) or ((self.rect.left > paddle.x - self.rect.width/2 - 1) and
+                                                     (self.rect.left < paddle.x + paddle.length + self.rect.width/2 + 1)
+                                                     and (self.rect.top > paddle.y - self.rect.width/2 - 1)
+                                                     and (self.rect.top < paddle.y + paddle.width + self.rect.width/2)):
+            if (self.rect.left < paddle.x + paddle.length):
                 self.angle = 0
-            if (self.x > paddle.x + paddle.length - paddle.length):
+            if (self.rect.left > paddle.x + paddle.length - paddle.length):
                 self.angle = 0
-            if (self.x < paddle.x + ((11 * paddle.length)/24)):
+            if (self.rect.left < paddle.x + ((11 * paddle.length)/24)):
                 self.angle = 1
-            if (self.x > paddle.x + paddle.length - ((11 * paddle.length)/24)):
+            if (self.rect.left > paddle.x + paddle.length - ((11 * paddle.length)/24)):
                 self.angle = 1
-            if (self.x < paddle.x + paddle.length/3):
+            if (self.rect.left < paddle.x + paddle.length/3):
                 self.angle = 2
-            if (self.x > paddle.x + paddle.length - paddle.length/3):
+            if (self.rect.left > paddle.x + paddle.length - paddle.length/3):
                 self.angle = 2
-            if (self.x < paddle.x + paddle.length/4):
+            if (self.rect.left < paddle.x + paddle.length/4):
                 self.angle = 3
                 if self.direction == "DR":
                     self.direction = "DL"
-            if (self.x > paddle.x + paddle.length - paddle.length/4):
+            if (self.rect.left > paddle.x + paddle.length - paddle.length/4):
                 self.angle = 3
                 if self.direction == "DL":
                     self.direction = "DR"
-            if (self.x < paddle.x + paddle.length/6):
+            if (self.rect.left < paddle.x + paddle.length/6):
                 self.angle = 4
                 if self.direction == "DR":
                     self.direction = "DL"
-            if (self.x > paddle.x + paddle.length - paddle.length/6):
+            if (self.rect.left > paddle.x + paddle.length - paddle.length/6):
                 self.angle = 4
                 if self.direction == "DL":
                     self.direction = "DR"
-            if (self.x < paddle.x + paddle.length/12):
+            if (self.rect.left < paddle.x + paddle.length/12):
                 self.angle = 5
                 if self.direction == "DR":
                     self.direction = "DL"
-            if (self.x > paddle.x + paddle.length - paddle.length/12):
+            if (self.rect.left > paddle.x + paddle.length - paddle.length/12):
                 self.angle = 5
                 if self.direction == "DL":
                     self.direction = "DR"
+                    
+            self.hit = True
                 
             if self.direction == "DL":
                 self.direction = "UL"
             elif self.direction == "DR":
                 self.direction = "UR"
 
-        if self.angle == 5:
-            angleX = 3
-            angleY = 1
-            if ball.speed < 3:
-                ball.speed = ball.speed + 1
-        elif self.angle == 4:
-            angleX = 3
-            angleY = 2
-            if ball.speed < 3:
-                ball.speed = ball.speed + 1
-        elif self.angle == 3:
-            angleX = 2
-            angleY = 2
-        elif self.angle == 2:
-            angleX = 1
-            angleY = 3
-            if ball.speed > 1:
-                ball.speed = ball.speed - 1
-        elif self.angle == 1:
-            angleX = 1
-            angleY = 2
-            ball.speed = 1
-        elif self.angle == 0:
-            ball.speed = 1
-            angleX = 0
-            angleY = 1
+        if self.oldDirection != self.direction and self.hit:
+            self.oldDirection = self.direction
+            self.hit = False
+
+            if self.angle == 5:
+                self.angleX = 3
+                self.angleY = 1
+                if ball.speed < 4:
+                    ball.speed = ball.speed + 1
+            elif self.angle == 4:
+                self.angleX = 3
+                self.angleY = 2
+                if ball.speed < 4:
+                    ball.speed = ball.speed + 1
+            elif self.angle == 3:
+                self.angleX = 2
+                self.angleY = 2
+            elif self.angle == 2:
+                self.angleX = 1
+                self.angleY = 3
+                if ball.speed > 1:
+                    ball.speed = ball.speed - 1
+            elif self.angle == 1:
+                self.angleX = 1
+                self.angleY = 2
+                if ball.speed > 1:
+                    ball.speed = ball.speed - 1
+            elif self.angle == 0:
+                self.angleX = 0
+                self.angleY = 2
+                if ball.speed > 1:
+                    ball.speed = ball.speed - 1
 
         if self.direction == "DR":
-            self.x = self.x + angleX * ball.speed
-            self.y = self.y + angleY * ball.speed
+            self.rect.left = self.rect.left + self.angleX * ball.speed
+            self.rect.top = self.rect.top + self.angleY * ball.speed
         elif self.direction == "UR":
-            self.x = self.x + angleX * ball.speed
-            self.y = self.y - angleY * ball.speed
+            self.rect.left = self.rect.left + self.angleX * ball.speed
+            self.rect.top = self.rect.top - self.angleY * ball.speed
         elif self.direction == "UL":
-            self.x = self.x - angleX * ball.speed
-            self.y = self.y - angleY * ball.speed
+            self.rect.left = self.rect.left - self.angleX * ball.speed
+            self.rect.top = self.rect.top - self.angleY * ball.speed
         elif self.direction == "DL":
-            self.x = self.x - angleX * ball.speed
-            self.y = self.y + angleY * ball.speed
+            self.rect.left = self.rect.left - self.angleX * ball.speed
+            self.rect.top = self.rect.top + self.angleY * ball.speed
                 
-        pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius, 0)
+        screen.blit(self.image, self.rect)
  
 
-ball = Ball(ballX, ballY, WHITE, ballRadius, ballAngle, ballSpeed, ballDirection)
+ball = Ball(ballX, ballY, WHITE, ballLength, ballAngle, ballSpeed, ballDirection, ballAngleX, ballAngleY)
+brick = RegularBrick(brickX, brickY, RED, GREEN, brickLength, brickWidth)
 paddle = Paddle(paddleX, paddleY, WHITE, paddleLength, paddleWidth)
+
 
 gameOn = True
 
@@ -187,21 +234,24 @@ while gameOn:
 
     
     screen.fill(BLACK)
-    paddle.updateDraw()    
-    
+       
+    brick.updateDraw()
     ball.updateDraw()
+    paddle.updateDraw() 
 
 
     # --- Print Variables
     font = pygame.font.Font(None, 36)
     text = font.render(str(ball.angle), 1, (255, 255, 255))
-    text2 = font.render(str(ball.x), 1, (255, 255, 255))
-    text3 = font.render(str(ball.y), 1, (255, 255, 255))
+    text2 = font.render(str(ball.rect.left), 1, (255, 255, 255))
+    text3 = font.render(str(ball.rect.top), 1, (255, 255, 255))
     text4 = font.render(str(ball.direction), 1, (255, 255, 255))
+    text5 = font.render(str(ball.collision), 1, (255, 255, 255))
     screen.blit(text, (900, 20))
     screen.blit(text2, (900, 60))
     screen.blit(text3, (900, 100))
     screen.blit(text4, (900, 140))
+    screen.blit(text5, (900, 180))
 
  
  
