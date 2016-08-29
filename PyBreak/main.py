@@ -22,18 +22,18 @@ paddleWidth = 4
 paddleLength = 100
 
 ballX = (gameWidth/2 - 45)
-ballY = 600
+ballY = 700
 ballLength = 5
-ballAngle = 0
-ballSpeed = 1
+ballAngle = 1
+ballSpeed = 4
 ballDirection = "DR"
-ballAngleX = 0
+ballAngleX = 1
 ballAngleY = 2
 
-brickX = 200
-brickY = 200
-brickWidth = 200
-brickLength = 200
+brickX = 80
+brickY = 130
+brickWidth = 50
+brickLength = 20
 
 bricks = []
 
@@ -164,6 +164,33 @@ class Ball(pygame.sprite.Sprite):
             elif self.direction == "DR":
                 self.direction = "UR"
 
+        for brick in bricks:
+            if self.rect.colliderect(brick):
+                if self.direction == "UR":
+                    if self.rect.x < brick.rect.x:
+                        self.direction = "UL"
+                    else:
+                        self.direction = "DR"
+                elif self.direction == "UL":
+                    if self.rect.y > brick.rect.y:
+                        self.direction = "DL"
+                    else:
+                        self.direction = "UR"
+                elif self.direction == "DR":
+                    if self.rect.y < brick.rect.y:
+                        self.direction = "UR"
+                    else:
+                        self.direction = "DL"
+                elif self.direction == "DL":
+                    if self.rect.y < brick.rect.y:
+                        self.direction = "UL"
+                    else:
+                        self.direction = "DR"
+
+                self.collision = True
+                bricks.remove(brick)
+                del brick
+
         if self.oldDirection != self.direction and self.hit:
             self.oldDirection = self.direction
             self.hit = False
@@ -208,37 +235,17 @@ class Ball(pygame.sprite.Sprite):
             self.rect.top = self.rect.top - self.angleY * ball.speed
         elif self.direction == "DL":
             self.rect.left = self.rect.left - self.angleX * ball.speed
-            self.rect.top = self.rect.top + self.angleY * ball.speed
+            self.rect.top = self.rect.top + self.angleY * ball.speed  
                 
         screen.blit(self.image, self.rect)
- 
 
-ball = Ball(ballX, ballY, WHITE, ballLength, ballAngle, ballSpeed, ballDirection, ballAngleX, ballAngleY)
-brick = RegularBrick(brickX, brickY, RED, GREEN, brickLength, brickWidth)
-paddle = Paddle(paddleX, paddleY, WHITE, paddleLength, paddleWidth)
-
-
-gameOn = True
-
-# -------- Main Program Loop -----------
-while gameOn:
-    # --- Main event loop
-    for event in pygame.event.get(): # User did something
-        if event.type == pygame.QUIT: # If user clicked close
-            gameOn = False # Flag that we are done so we exit this loop
- 
-    # --- Game logic should go here
-    
-
-    # --- Drawing
-
-    
+def updateDraw():
     screen.fill(BLACK)
-       
-    brick.updateDraw()
+    
+    for brick in bricks:
+        brick.updateDraw()
     ball.updateDraw()
-    paddle.updateDraw() 
-
+    paddle.updateDraw()
 
     # --- Print Variables
     font = pygame.font.Font(None, 36)
@@ -253,13 +260,32 @@ while gameOn:
     screen.blit(text4, (900, 140))
     screen.blit(text5, (900, 180))
 
- 
- 
-    # --- Go ahead and update the screen with what we've drawn.
     pygame.display.flip()
-     
-    # --- Limit to 60 frames per second
+    
     clock.tick(90)
+
+def level1():
+    for i in range (1, 17):
+        for j in range(1, 10):
+             bricks.append(RegularBrick(brickX + (i*50), brickY + (j * 20), RED, GREEN, brickLength, brickWidth))
+
+ball = Ball(ballX, ballY, WHITE, ballLength, ballAngle, ballSpeed, ballDirection, ballAngleX, ballAngleY)
+paddle = Paddle(paddleX, paddleY, WHITE, paddleLength, paddleWidth)
+
+level1()
+
+gameOn = True
+
+# -------- Main Program Loop -----------
+while gameOn:
+    # --- Main event loop
+    for event in pygame.event.get(): # User did something
+        if event.type == pygame.QUIT: # If user clicked close
+            gameOn = False # Flag that we are done so we exit this loop
+
+    
+    updateDraw()
+    
  
 #Once we have exited the main program loop we can stop the game engine:
 pygame.quit()
