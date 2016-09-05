@@ -95,15 +95,18 @@ class Brick(object):
             (cls.rect.left, cls.rect.top + 14), 1)
 
 
-class User(object):
+class Driver(object):
 
-    def __init__(self, x, y, direction):
-        self.image = pygame.image.load('tron.png').convert()
+    def __init__(self, x, y, direction, image, color, brickimage):
+        self.image = pygame.image.load(image).convert()
         self.rect = self.image.get_rect()
         self.rotated = False
         self.rect.left = x
         self.rect.top = y
         self.dir = direction
+        self.color = color
+        self.brickimage = brickimage
+        self.driver_trail = []
 
     def update_draw(cls):
         screen.blit(cls.image, cls.rect)    
@@ -151,23 +154,60 @@ class User(object):
         elif cls.dir == 3:
             cls.rect.left = cls.rect.left - 15
 
+    def reset(cls, x, y, direction, image):
+        cls.image = pygame.image.load(image).convert()
+        cls.rect = cls.image.get_rect()
+        cls.rotated = False
+        cls.rect.left = x
+        cls.rect.top = y
+        cls.dir = direction
 
-def reset(overseer, user, user_trail):
-    user.rect.left = 56*15 + board_x
-    user.rect.top = 24 * 15 + board_y
-    user.dir = 3
-    user.image = pygame.image.load('tron.png').convert()
-    del user_trail[:]
+
+def reset(drivers, overseer):
+    
+    drivers[0].reset(56*15 + board_x, 24 * 15 + board_y, 3, 'tron.png')
+    drivers[1].reset(8*15 + board_x, 24 * 15 + board_y, 1, 'cp.png')
+
+    for driver in drivers:
+        del driver.driver_trail[:]
+
     overseer.reset = False
     
     screen.fill(BLACK)
     draw_board()
 
-    user.update_draw()
-    pygame.display.flip() 
+    pygame.display.flip()
+
+def makeBrick(driver):
+    new_brick = Brick(driver.rect.left, driver.rect.top, driver.color, driver.brickimage)
+    driver_trail = driver.driver_trail
+    for ibrick in driver_trail:
+        if pygame.sprite.collide_rect(driver, ibrick):
+            return False
+
+        ibrick.update_draw()
+        
+        if new_brick.rect.top == ibrick.rect.top:
+            if new_brick.rect.left == ibrick.rect.left - 15:
+                new_brick.right = True
+                ibrick.left = True
+            if new_brick.rect.left == ibrick.rect.left + 15:
+                new_brick.left = True
+                ibrick.right = True
+        if new_brick.rect.left == ibrick.rect.left:
+            if new_brick.rect.top == ibrick.rect.top - 15:
+                new_brick.bottom = True
+                ibrick.top = True
+            if new_brick.rect.top == ibrick.rect.top + 15:
+                new_brick.top = True
+                ibrick.bottom = True
+
+    driver_trail.append(new_brick)
+
+    return False
 
 
-def update_board(user, overseer, user_trail):
+def update_board(drivers, overseer):
     # This is where the magic happens so to speak
     # I wanted to find a way to draw an outline around the blocks in the most efficient way possible
     # Because I had to loop through all the bricks to print them at least once, I added the check code
@@ -175,46 +215,24 @@ def update_board(user, overseer, user_trail):
     screen.fill(BLACK)
     draw_board()
 
-    new_user_brick = Brick(user.rect.left, user.rect.top, LIGHTBLUE, 'brick.png')
-
     has_reset = False
 
-    for ibrick in user_trail:
-        if pygame.sprite.collide_rect(user, ibrick):
-            overseer.reset = True
-            has_reset = True
-            reset(overseer, user, user_trail)
-            break
-
-        ibrick.update_draw()
-        
-        if new_user_brick.rect.top == ibrick.rect.top:
-            if new_user_brick.rect.left == ibrick.rect.left - 15:
-                new_user_brick.right = True
-                ibrick.left = True
-            if new_user_brick.rect.left == ibrick.rect.left + 15:
-                new_user_brick.left = True
-                ibrick.right = True
-        if new_user_brick.rect.left == ibrick.rect.left:
-            if new_user_brick.rect.top == ibrick.rect.top - 15:
-                new_user_brick.bottom = True
-                ibrick.top = True
-            if new_user_brick.rect.top == ibrick.rect.top + 15:
-                new_user_brick.top = True
-                ibrick.bottom = True
+    for driver in drivers:
+        has_reset = makeBrick(driver)
 
     for wall in overseer.walls:
-        print wall.rect.left, wall.rect.top, wall.rect.width, wall.rect.height
-        if pygame.sprite.collide_rect(user, wall):
-            overseer.reset = True
-            has_reset = True
-            reset(overseer, user, user_trail)
-            break
+        for driver in drivers:
+            if pygame.sprite.collide_rect(driver, wall):
+                overseer.reset = True
+                has_reset = True
+                reset(drivers, overseer)
+                break
 
-    if not has_reset:
-        user_trail.append(new_user_brick)
-        
-    user.update_draw()
+    if has_reset:
+        reset(drivers, overseer)
+
+    for driver in drivers:
+        driver.update_draw()
     
     pygame.display.flip()      
 
@@ -251,10 +269,15 @@ def keyCheck(user):
 def main():
 
     # Initialize user and game
-    user = User(56*15 + board_x, 24 * 15 + board_y, 3)
-    user_trail = []
+    user = Driver(56*15 + board_x, 24 * 15 + board_y, 3, 'tron.png', LIGHTBLUE, 'brick.png')
+    enemy1 = Driver(6*15 + board_x, 24 * 15 + board_y, 1, 'cp.png', RED, 'brick2.png')
+    drivers = []
     gameOn = True
     overseer = Overseer()
+
+    # Initiate drivers
+    drivers.append(user)
+    drivers.append(enemy1)
     
     # Place the invisible walls
     topwall = Wall(board_x, board_y - 1, board_width, 1)
@@ -277,7 +300,8 @@ def main():
                 keyCheck(user)
             if event.type == move:
                 user.move()
-                update_board(user, overseer, user_trail)
+                enemy1.move()
+                update_board(drivers, overseer)
 
     pygame.quit()
 
