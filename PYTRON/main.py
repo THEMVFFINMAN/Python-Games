@@ -52,12 +52,42 @@ class userBrick(object):
         self.rect = self.image.get_rect()
         self.rect.left = x
         self.rect.top = y
+        self.top = False
+        self.right = False
+        self.bottom = False
+        self.left = False
 
     def updateDraw(self):
         screen.blit(self.image, self.rect)
+        if self.top == False:
+            pygame.draw.line(screen, LIGHTBLUE, (self.rect.left, self.rect.top), (self.rect.left + 14, self.rect.top), 1)
+        if self.right == False:
+            pygame.draw.line(screen, LIGHTBLUE, (self.rect.left + 14, self.rect.top), (self.rect.left + 14, self.rect.top + 14), 1)
+        if self.bottom == False:
+            pygame.draw.line(screen, LIGHTBLUE, (self.rect.left, self.rect.top + 14), (self.rect.left + 14, self.rect.top + 14), 1)
+        if self.left == False:
+            pygame.draw.line(screen, LIGHTBLUE, (self.rect.left, self.rect.top), (self.rect.left, self.rect.top + 14), 1)
 
 def addBrick():
-    userTrail.append(userBrick(user.rect.left, user.rect.top))
+
+    newBrick = userBrick(user.rect.left, user.rect.top)
+    updateBrick(newBrick)
+    userTrail.append(newBrick)
+        
+def updateBrick(newBrick):
+    for brick in userTrail:
+        if newBrick.rect.top == brick.rect.top + 15 and newBrick.rect.left == brick.rect.left:
+            newBrick.top = True
+            brick.bottom = True
+        if newBrick.rect.top == brick.rect.top and newBrick.rect.left == brick.rect.left - 15:
+            newBrick.right = True
+            brick.left = True
+        if newBrick.rect.top == brick.rect.top - 15 and newBrick.rect.left == brick.rect.left:
+            newBrick.bottom = True
+            brick.top = True
+        if newBrick.rect.top == brick.rect.top and newBrick.rect.left == brick.rect.left + 15:
+            newBrick.left = True
+            brick.right = True
 
 class User(object):
 
@@ -114,33 +144,33 @@ class User(object):
         elif self.dir == 3:
             self.rect.left = self.rect.left - 15
 
-
-text = ""
-text2 = ""
-text3 = ""
-text4 = ""
-text5 = ""
-text6 = ""
-
-def updateDraw():
+def updateBoard():
+    # This is where the magic happens so to speak
+    # I wanted to find a way to draw an outline around the blocks in the most efficient way possible
+    # Because I had to loop through all the bricks to print them at least once, I added the check code
+    # to determine if it needed an outline or not. For my purposes, it is fast and efficient
     screen.fill(BLACK)
     drawBoard()
 
-    for brick in userTrail:
-        
-        brick.updateDraw()
-        brickTop = False
-        brickBottom = False
-        
-        for brick2 in userTrail:
-            if brick.rect.top == brick2.rect.top + 15 and brick.rect.left == brick2.rect.left:
-                brickTop = True
-                
-        if not brickTop:
-            pygame.draw.line(screen, LIGHTBLUE, (brick.rect.left, brick.rect.top), (brick.rect.left + 15, brick.rect.top), 1)
-        if not brickBottom:
-            pygame.draw.line(screen, LIGHTBLUE, (brick.rect.left, brick.rect.top + 15), (brick.rect.left + 15, brick.rect.top + 15), 1)
+    newBrick = userBrick(user.rect.left, user.rect.top)
 
+    for brick in userTrail:
+        brick.updateDraw()
+        if newBrick.rect.top == brick.rect.top + 15 and newBrick.rect.left == brick.rect.left:
+            newBrick.top = True
+            brick.bottom = True
+        if newBrick.rect.top == brick.rect.top and newBrick.rect.left == brick.rect.left - 15:
+            newBrick.right = True
+            brick.left = True
+        if newBrick.rect.top == brick.rect.top - 15 and newBrick.rect.left == brick.rect.left:
+            newBrick.bottom = True
+            brick.top = True
+        if newBrick.rect.top == brick.rect.top and newBrick.rect.left == brick.rect.left + 15:
+            newBrick.left = True
+            brick.right = True
+
+    userTrail.append(newBrick)
+        
     user.updateDraw()
     
     pygame.display.flip()      
@@ -171,25 +201,20 @@ def keyCheck():
 
 user = User(56*15 + boardX, 24 * 15 + boardY, 3)
 
-
-
 gameOn = True
 
 while gameOn:
     
     clock.tick(50)
     
-    for event in pygame.event.get(): # User did something
-        if event.type == pygame.QUIT: # If user clicked close
-            gameOn = False # Flag that we are done so we exit this loop
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            gameOn = False 
         if event.type == pygame.KEYDOWN:
             keyCheck()
         if event.type == move:
             addBrick()
             user.move()
+            updateBoard()
     
-    updateDraw()
-    
- 
-#Once we have exited the main program loop we can stop the game engine:
 pygame.quit()
