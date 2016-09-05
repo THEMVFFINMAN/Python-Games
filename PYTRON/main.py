@@ -37,7 +37,6 @@ up, right, down, left = (False,)*4
 
 board = [[0 for k in range(0, block_width)] for j in range(0, block_height)]
 
-
 def draw_board():
     # This just draws the grid lines that make up the board
     for k in range(0, block_width + 1):
@@ -56,6 +55,14 @@ class Overseer(object):
         self.user_score = 0
         self.cp_score = 0
         self.reset = False
+        self.walls = []
+
+
+class Wall(object):
+    # The invisible walls
+
+    def __init__(self, x, y, width, height):
+        self.rect = pygame.Rect(x,y,width,height)
 
 
 class Brick(object):
@@ -152,7 +159,7 @@ def reset(overseer, user, user_trail):
     user.image = pygame.image.load('tron.png').convert()
     del user_trail[:]
     overseer.reset = False
-
+    
     screen.fill(BLACK)
     draw_board()
 
@@ -194,7 +201,15 @@ def update_board(user, overseer, user_trail):
                 ibrick.top = True
             if new_user_brick.rect.top == ibrick.rect.top + 15:
                 new_user_brick.top = True
-                ibrick.bottom = True     
+                ibrick.bottom = True
+
+    for wall in overseer.walls:
+        print wall.rect.left, wall.rect.top, wall.rect.width, wall.rect.height
+        if pygame.sprite.collide_rect(user, wall):
+            overseer.reset = True
+            has_reset = True
+            reset(overseer, user, user_trail)
+            break
 
     if not has_reset:
         user_trail.append(new_user_brick)
@@ -240,6 +255,17 @@ def main():
     user_trail = []
     gameOn = True
     overseer = Overseer()
+    
+    # Place the invisible walls
+    topwall = Wall(board_x, board_y - 1, board_width, 1)
+    rightwall = Wall(board_x + board_width + 1, board_y, 1, board_height)
+    bottomwall = Wall(board_x, board_y + board_height + 1, board_width, 1)
+    leftwall = Wall(board_x - 1, board_y, 1, board_height)
+
+    overseer.walls.append(topwall)
+    overseer.walls.append(rightwall)
+    overseer.walls.append(bottomwall)
+    overseer.walls.append(leftwall)
 
     while gameOn:
         clock.tick(50)
