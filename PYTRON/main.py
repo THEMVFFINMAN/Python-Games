@@ -35,8 +35,6 @@ pygame.time.set_timer(move, game_speed)
 
 up, right, down, left = (False,)*4
 
-board = [[0 for k in range(0, block_width)] for j in range(0, block_height)]
-
 def draw_board():
     # This just draws the grid lines that make up the board
     for k in range(0, block_width + 1):
@@ -54,14 +52,6 @@ class Overseer(object):
     def __init__(self):
         self.user_score = 0
         self.cp_score = 0
-        self.walls = []
-
-
-class Wall(object):
-    # The invisible walls
-
-    def __init__(self, x, y, width, height):
-        self.rect = pygame.Rect(x,y,width,height)
 
 
 class Brick(object):
@@ -161,8 +151,21 @@ class Driver(object):
         cls.rect.top = y
         cls.dir = direction
 
+def getNewBoard():
+    board = [[0 for k in range(0, block_width + 2)] for j in range(0, block_height + 2)]
 
-def reset(drivers, overseer):
+    for i in range(0, block_width + 2):
+        board[0][i] = 2
+        board[block_height + 1][i] = 2
+
+    for i in range(0, block_height + 1):
+        board[i][0] = 2
+        board[i][block_width + 1] = 2
+
+    return board
+
+
+def reset(drivers, overseer, board):
     
     drivers[0].reset(56*15 + board_x, 24 * 15 + board_y, 3, 'tron.png')
     drivers[1].reset(7*15 + board_x, 24 * 15 + board_y, 1, 'cp.png')
@@ -175,9 +178,10 @@ def reset(drivers, overseer):
     screen.fill(BLACK)
     draw_board()
 
-    pygame.display.flip()
+    board = getNewBoard()
 
-    print "RESET"
+    pygame.display.flip()
+    return board
 
 def makeBrick(driver):
     # This is where the magic happens so to speak
@@ -189,9 +193,6 @@ def makeBrick(driver):
     driver_trail = driver.driver_trail
     
     for ibrick in driver_trail:
-        if pygame.sprite.collide_rect(driver, ibrick):
-            return True
-
         ibrick.update_draw()
         
         if new_brick.rect.top == ibrick.rect.top:
@@ -210,10 +211,9 @@ def makeBrick(driver):
                 ibrick.bottom = True
 
     driver_trail.append(new_brick)
-    return False
 
 
-def update_board(drivers, overseer):
+def update_board(drivers, overseer, board):
     
     screen.fill(BLACK)
     draw_board()
@@ -227,104 +227,97 @@ def update_board(drivers, overseer):
         for driver2 in drivers:
             if driver2 != driver:
                 if pygame.sprite.collide_rect(driver, driver2):
-                    reset(drivers, overseer)
-                    return
-                                
-            for block in driver2.driver_trail:
-                if pygame.sprite.collide_rect(driver, block):
-                    reset(drivers, overseer)
-                if x > 1:
-                    if driver.rect.top == board_y:
-                        wall_up = True
-                    if driver.rect.left == board_x + board_width - 15:
-                        wall_right = True
-                    if driver.rect.top == board_y + board_height - 15:
-                        wall_down = True
-                    if driver.rect.left == board_x:
-                        wall_left = True
+                    return reset(drivers, overseer, board)
 
-                    if driver.rect.top == block.rect.top + 15 and driver.rect.left == block.rect.left:
-                        wall_up = True
-                    if driver.rect.left == block.rect.left - 15 and driver.rect.top == block.rect.top:
-                        wall_right = True
-                    if driver.rect.top == block.rect.top - 15 and driver.rect.left == block.rect.left:
-                        wall_down = True
-                    if driver.rect.left == block.rect.left + 15 and driver.rect.top == block.rect.top:
-                        wall_left = True
+        update_driver_y = ((driver.rect.top - board_y) / 15) + 1
+        update_driver_x = ((driver.rect.left - board_x) / 15) + 1
 
-        if wall_up and driver.dir == 0:
-            
-            if wall_left:
-                print "LEFT UP", driver.dir
-                driver.right()
-            elif wall_right:
-                print "RIGHT UP", driver.dir
-                driver.left()
-            else:
-                if bool(random.getrandbits(1)):
+        if board[update_driver_y][update_driver_x] != 0:
+            return reset(drivers, overseer, board)
+
+        if x > 1:
+
+            if board[update_driver_y - 1][update_driver_x] != 0:
+                wall_up = True
+            if board[update_driver_y][update_driver_x + 1] != 0:
+                wall_right = True
+            if board[update_driver_y + 1][update_driver_x] != 0:
+                wall_down = True
+            if board[update_driver_y][update_driver_x - 1] != 0:
+                wall_left = True       
+
+            if wall_up and driver.dir == 0:
+                
+                if wall_left:
+                    print "upleft"
                     driver.right()
-                else:
+                elif wall_right:
+                    print "upright"
                     driver.left()
-                    
-        if wall_right and driver.dir == 1:
-            
-            if wall_up:
-                print "UP RIGHT", driver.dir
-                driver.down()
-            elif wall_down:
-                print "DOWN RIGHT", driver.dir
-                driver.up()
-            else:
-                print "wallright", driver.dir
-                if bool(random.getrandbits(1)):
-                    driver.down()
                 else:
-                    driver.up()
-                    
-        if wall_down and driver.dir == 2:
-            
-            if wall_left:
-                print "LEFT DOWN", driver.dir
-                driver.right()
-            elif wall_right:
-                print "RIGHT DOWN", driver.dir
-                driver.left()
-            else:
-                print "walldown", driver.dir
-                if bool(random.getrandbits(1)):
-                    driver.right()
-                else:
-                    driver.left()
-                    
-        if wall_left and driver.dir == 3:
-            
-            if wall_up:
-                print "UP LEFT", driver.dir
-                driver.down()
-            elif wall_down:
-                print "DOWN LEFT", driver.dir
-                driver.up()
-            else:
-                print "wallleft", driver.dir
-                if bool(random.getrandbits(1)):
-                    driver.down()
-                else:
-                    driver.up()
-                                    
-        if makeBrick(driver):
-            reset(drivers,overseer)
-            return
-        driver.update_draw()
+                    print "up"
+                    if bool(random.getrandbits(1)):
+                        driver.right()
+                    else:
+                        driver.left()
                         
-    x = 0
-    for driver in drivers:
-        x = x + 1
-        for wall in overseer.walls:
-            if pygame.sprite.collide_rect(driver, wall):
-                reset(drivers, overseer)
-                return                    
+            if wall_right and driver.dir == 1:
+                
+                if wall_up:
+                    print "rightup"
+                    driver.down()
+                elif wall_down:
+                    print "rightdown"
+                    driver.up()
+                else:
+                    print "right"
+                    if bool(random.getrandbits(1)):
+                        driver.down()
+                    else:
+                        driver.up()
+                        
+            if wall_down and driver.dir == 2:
+                
+                if wall_left:
+                    print "downleft"
+                    driver.right()
+                elif wall_right:
+                    print "downright"
+                    driver.left()
+                else:
+                    print "down"
+                    if bool(random.getrandbits(1)):
+                        driver.right()
+                    else:
+                        driver.left()
+                        
+            if wall_left and driver.dir == 3:
+                
+                if wall_up:
+                    print "leftup"
+                    driver.down()
+                elif wall_down:
+                    print "leftdown"
+                    driver.up()
+                else:
+                    print "left"
+                    if bool(random.getrandbits(1)):
+                        driver.down()
+                    else:
+                        driver.up()
+                                    
+        makeBrick(driver)
 
-    pygame.display.flip()      
+        if driver.color == LIGHTBLUE:
+            board[update_driver_y][update_driver_x] = 1
+        else:
+            board[update_driver_y][update_driver_x] = 3
+        
+        driver.update_draw()           
+
+    pygame.display.flip()
+
+    return board
 
 
 def keyCheck(user):
@@ -359,8 +352,8 @@ def keyCheck(user):
 def main():
 
     # Initialize user and game
-    user = Driver(56*15 + board_x, 24 * 15 + board_y, 3, 'tron.png', LIGHTBLUE, 'brick.png')
-    enemy1 = Driver(7*15 + board_x, 24 * 15 + board_y, 2, 'cp.png', RED, 'brick2.png')
+    user = Driver(56 * 15 + board_x, 24 * 15 + board_y, 3, 'tron.png', LIGHTBLUE, 'brick.png')
+    enemy1 = Driver(7 * 15 + board_x, 24 * 15 + board_y, 1, 'cp.png', RED, 'brick2.png')
     
     drivers = []
     gameOn = True
@@ -369,17 +362,10 @@ def main():
     # Initiate drivers
     drivers.append(user)
     drivers.append(enemy1)
-    
-    # Place the invisible walls
-    topwall = Wall(board_x, board_y - 1, board_width, 1)
-    rightwall = Wall(board_x + board_width + 1, board_y, 1, board_height)
-    bottomwall = Wall(board_x, board_y + board_height + 1, board_width, 1)
-    leftwall = Wall(board_x - 1, board_y, 1, board_height)
 
-    overseer.walls.append(topwall)
-    overseer.walls.append(rightwall)
-    overseer.walls.append(bottomwall)
-    overseer.walls.append(leftwall)
+    # Make board
+    board = getNewBoard()
+    
 
     while gameOn:
         clock.tick(50)
@@ -392,7 +378,7 @@ def main():
             if event.type == move:
                 for driver in drivers:
                     driver.move()
-                update_board(drivers, overseer)
+                board = update_board(drivers, overseer, board)
 
     pygame.quit()
 
