@@ -1,5 +1,6 @@
 import math
 import pygame
+import random
 
 pygame.init()
 
@@ -30,7 +31,6 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption("PYTRON")
 clock = pygame.time.Clock()
 move = pygame.USEREVENT + 1
-reset = pygame.USEREVENT + 2
 pygame.time.set_timer(move, game_speed)
 
 up, right, down, left = (False,)*4
@@ -54,7 +54,6 @@ class Overseer(object):
     def __init__(self):
         self.user_score = 0
         self.cp_score = 0
-        self.reset = False
         self.walls = []
 
 
@@ -115,42 +114,42 @@ class Driver(object):
     def up(cls):
         if cls.dir == 1:
             cls.image = pygame.transform.rotate(cls.image, 90)
-            cls.dir = 2
+            cls.dir = 0
         elif cls.dir == 3:
             cls.image = pygame.transform.rotate(cls.image, 270)
-            cls.dir = 2
+            cls.dir = 0
 
     def right(cls):
         if cls.dir == 0:
-            cls.image = pygame.transform.rotate(cls.image, 90)
+            cls.image = pygame.transform.rotate(cls.image, 270)
             cls.dir = 1
         elif cls.dir == 2:
-            cls.image = pygame.transform.rotate(cls.image, 270)
+            cls.image = pygame.transform.rotate(cls.image, 90)
             cls.dir = 1
 
     def down(cls):
         if cls.dir == 1:
             cls.image = pygame.transform.rotate(cls.image, 270)
-            cls.dir = 0
+            cls.dir = 2
         elif cls.dir == 3:
             cls.image = pygame.transform.rotate(cls.image, 90)
-            cls.dir = 0
+            cls.dir = 2
 
     def left(cls):
         if cls.dir == 0:
-            cls.image = pygame.transform.rotate(cls.image, 270)
+            cls.image = pygame.transform.rotate(cls.image, 90)
             cls.dir = 3
         elif cls.dir == 2:
-            cls.image = pygame.transform.rotate(cls.image, 90)
+            cls.image = pygame.transform.rotate(cls.image, 270)
             cls.dir = 3
 
     def move(cls):
         if cls.dir == 0:
-            cls.rect.top = cls.rect.top + 15
+            cls.rect.top = cls.rect.top - 15
         elif cls.dir == 1:
             cls.rect.left = cls.rect.left + 15
         elif cls.dir == 2:
-            cls.rect.top = cls.rect.top - 15
+            cls.rect.top = cls.rect.top + 15
         elif cls.dir == 3:
             cls.rect.left = cls.rect.left - 15
 
@@ -166,7 +165,7 @@ class Driver(object):
 def reset(drivers, overseer):
     
     drivers[0].reset(56*15 + board_x, 24 * 15 + board_y, 3, 'tron.png')
-    drivers[1].reset(8*15 + board_x, 24 * 15 + board_y, 1, 'cp.png')
+    drivers[1].reset(7*15 + board_x, 24 * 15 + board_y, 1, 'cp.png')
 
     for driver in drivers:
         del driver.driver_trail[:]
@@ -178,12 +177,20 @@ def reset(drivers, overseer):
 
     pygame.display.flip()
 
+    print "RESET"
+
 def makeBrick(driver):
+    # This is where the magic happens so to speak
+    # I wanted to find a way to draw an outline around the blocks in the most efficient way possible
+    # Because I had to loop through all the bricks to print them at least once, I added the check code
+    # to determine if it needed an outline or not. For my purposes, it is fast and efficient
+    
     new_brick = Brick(driver.rect.left, driver.rect.top, driver.color, driver.brickimage)
     driver_trail = driver.driver_trail
+    
     for ibrick in driver_trail:
         if pygame.sprite.collide_rect(driver, ibrick):
-            return False
+            return True
 
         ibrick.update_draw()
         
@@ -203,37 +210,120 @@ def makeBrick(driver):
                 ibrick.bottom = True
 
     driver_trail.append(new_brick)
-
     return False
 
 
 def update_board(drivers, overseer):
-    # This is where the magic happens so to speak
-    # I wanted to find a way to draw an outline around the blocks in the most efficient way possible
-    # Because I had to loop through all the bricks to print them at least once, I added the check code
-    # to determine if it needed an outline or not. For my purposes, it is fast and efficient
+    
     screen.fill(BLACK)
     draw_board()
 
-    has_reset = False
-
+    x = 0
     for driver in drivers:
-        has_reset = makeBrick(driver)
+        x = x + 1
 
-    for wall in overseer.walls:
-        for driver in drivers:
-            if pygame.sprite.collide_rect(driver, wall):
-                overseer.reset = True
-                has_reset = True
-                reset(drivers, overseer)
-                break
+        wall_up, wall_right, wall_down, wall_left = False, False, False, False
 
-    if has_reset:
-        reset(drivers, overseer)
+        for driver2 in drivers:
+            if driver2 != driver:
+                if pygame.sprite.collide_rect(driver, driver2):
+                    reset(drivers, overseer)
+                    return
+                                
+            for block in driver2.driver_trail:
+                if pygame.sprite.collide_rect(driver, block):
+                    reset(drivers, overseer)
+                if x > 1:
+                    if driver.rect.top == board_y:
+                        wall_up = True
+                    if driver.rect.left == board_x + board_width - 15:
+                        wall_right = True
+                    if driver.rect.top == board_y + board_height - 15:
+                        wall_down = True
+                    if driver.rect.left == board_x:
+                        wall_left = True
 
-    for driver in drivers:
+                    if driver.rect.top == block.rect.top + 15 and driver.rect.left == block.rect.left:
+                        wall_up = True
+                    if driver.rect.left == block.rect.left - 15 and driver.rect.top == block.rect.top:
+                        wall_right = True
+                    if driver.rect.top == block.rect.top - 15 and driver.rect.left == block.rect.left:
+                        wall_down = True
+                    if driver.rect.left == block.rect.left + 15 and driver.rect.top == block.rect.top:
+                        wall_left = True
+
+        if wall_up and driver.dir == 0:
+            
+            if wall_left:
+                print "LEFT UP", driver.dir
+                driver.right()
+            elif wall_right:
+                print "RIGHT UP", driver.dir
+                driver.left()
+            else:
+                if bool(random.getrandbits(1)):
+                    driver.right()
+                else:
+                    driver.left()
+                    
+        if wall_right and driver.dir == 1:
+            
+            if wall_up:
+                print "UP RIGHT", driver.dir
+                driver.down()
+            elif wall_down:
+                print "DOWN RIGHT", driver.dir
+                driver.up()
+            else:
+                print "wallright", driver.dir
+                if bool(random.getrandbits(1)):
+                    driver.down()
+                else:
+                    driver.up()
+                    
+        if wall_down and driver.dir == 2:
+            
+            if wall_left:
+                print "LEFT DOWN", driver.dir
+                driver.right()
+            elif wall_right:
+                print "RIGHT DOWN", driver.dir
+                driver.left()
+            else:
+                print "walldown", driver.dir
+                if bool(random.getrandbits(1)):
+                    driver.right()
+                else:
+                    driver.left()
+                    
+        if wall_left and driver.dir == 3:
+            
+            if wall_up:
+                print "UP LEFT", driver.dir
+                driver.down()
+            elif wall_down:
+                print "DOWN LEFT", driver.dir
+                driver.up()
+            else:
+                print "wallleft", driver.dir
+                if bool(random.getrandbits(1)):
+                    driver.down()
+                else:
+                    driver.up()
+                                    
+        if makeBrick(driver):
+            reset(drivers,overseer)
+            return
         driver.update_draw()
-    
+                        
+    x = 0
+    for driver in drivers:
+        x = x + 1
+        for wall in overseer.walls:
+            if pygame.sprite.collide_rect(driver, wall):
+                reset(drivers, overseer)
+                return                    
+
     pygame.display.flip()      
 
 
@@ -270,7 +360,8 @@ def main():
 
     # Initialize user and game
     user = Driver(56*15 + board_x, 24 * 15 + board_y, 3, 'tron.png', LIGHTBLUE, 'brick.png')
-    enemy1 = Driver(6*15 + board_x, 24 * 15 + board_y, 1, 'cp.png', RED, 'brick2.png')
+    enemy1 = Driver(7*15 + board_x, 24 * 15 + board_y, 2, 'cp.png', RED, 'brick2.png')
+    
     drivers = []
     gameOn = True
     overseer = Overseer()
@@ -299,8 +390,8 @@ def main():
             if event.type == pygame.KEYDOWN:
                 keyCheck(user)
             if event.type == move:
-                user.move()
-                enemy1.move()
+                for driver in drivers:
+                    driver.move()
                 update_board(drivers, overseer)
 
     pygame.quit()
