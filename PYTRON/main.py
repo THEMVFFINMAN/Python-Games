@@ -20,9 +20,25 @@ board_width = 960
 board_height = 720
 board_x = 32
 board_y = 100
-game_speed = 100
+game_speed = 50
 block_width = 64
 block_height = 48
+fill_limit = 500
+
+user_start_x = 56 * 15 + board_x
+user_start_y = 24 * 15 + board_y
+user_dir = 3
+user_image = 'tron.png'
+user_color = LIGHTBLUE
+user_brick = 'brick.png'
+
+
+enemy1_start_x = 7 * 15 + board_x
+enemy1_start_y = 24 * 15 + board_y
+enemy1_dir = 1
+enemy1_image = 'cp.png'
+enemy1_color = RED
+enemy1_brick = 'brick2.png'
 
 # Some initialization stuff
 font = pygame.font.Font(None, 36)
@@ -35,6 +51,45 @@ pygame.time.set_timer(move, game_speed)
 
 up, right, down, left = (False,)*4
 
+def flood_fill(x, y, new_board, direction):
+    toFill = set()
+    filled = []
+    filled.append((x, y))
+    toFill.add((x, y))
+    fill = 0
+
+    if direction == 0:
+        filled.append((x, y + 1))
+    elif direction == 1:
+        filled.append((x - 1, y))
+    elif direction == 2:
+        filled.append((x, y - 1))
+    elif direction == 3:
+        filled.append((x + 1, y))
+
+    while toFill:
+        (x,y) = toFill.pop()
+        filled.append((x, y))
+        
+        if new_board[y][x] != 0:
+            continue
+
+        fill += 1
+
+        if fill >= fill_limit:
+            return fill
+        
+        if (x - 1, y) not in filled:
+            toFill.add((x - 1,y))
+        if (x + 1,y) not in filled:
+            toFill.add((x + 1,y))
+        if (x,y - 1) not in filled:
+            toFill.add((x,y - 1))
+        if (x,y + 1) not in filled:
+            toFill.add((x,y + 1))
+        
+    return fill
+    
 def draw_board():
     # This just draws the grid lines that make up the board
     for k in range(0, block_width + 1):
@@ -45,6 +100,46 @@ def draw_board():
         pygame.draw.line(screen, GREEN, (board_x - 1, board_y - 1 + (k * 15)),
                          (board_width + board_x - 1, board_y - 1 + (k * 15)), 2)
 
+class Graph(object):
+    def __init__(self, graph_list):
+        self.graph_dict = self.generate(graph_list)
+
+    def generate(cls, graph_list):
+        graph_dict = {}
+        i = 1
+        for row in graph_list[:-1]:
+            j = 1
+            for value in row[:-1]:
+                graph_dict[(i, j)] = []
+                if i + 1 < len(graph_list) - 1:
+                    graph_dict[(i, j)].append((i + 1, j))
+                if i - 1 >= 1:
+                    graph_dict[(i, j)].append((i - 1, j))
+                if j + 1 < len (row) - 1:
+                    graph_dict[(i, j)].append((i, j + 1))
+                if j - 1 >= 1:
+                    graph_dict[(i, j)].append((i, j - 1))
+                j += 1
+            i += 1
+        return graph_dict
+
+    def get_path_size(cls, x, y):
+        path = set()
+        checked = []
+        path.add((x, y))
+        checked.append((x, y))
+
+        while checked:
+            coord = checked.pop()
+            for element in cls.graph_dict[coord]:
+                if element not in path:
+                    path.add(element)
+                    checked.append(element)          
+        
+        return len(path)
+    def remove_node(cls, x, y):
+        for coord in cls.graph_dict[(x, y)]:
+            cls.graph_dict[coord].remove((x, y))
 
 class Overseer(object):
     # Maintains score, reset, stuff like that
@@ -165,23 +260,19 @@ def getNewBoard():
     return board
 
 
-def reset(drivers, overseer, board):
+def reset(drivers, overseer):
     
-    drivers[0].reset(56*15 + board_x, 24 * 15 + board_y, 3, 'tron.png')
-    drivers[1].reset(7*15 + board_x, 24 * 15 + board_y, 1, 'cp.png')
+    drivers[0].reset(user_start_x, user_start_y, user_dir, user_image)
+    drivers[1].reset(enemy1_start_x, enemy1_start_y, enemy1_dir, enemy1_image)
 
     for driver in drivers:
         del driver.driver_trail[:]
 
-    overseer.reset = False
-    
-    screen.fill(BLACK)
-    draw_board()
+def normalize_x(x):
+    return ((x - board_x) / 15) + 1
 
-    board = getNewBoard()
-
-    pygame.display.flip()
-    return board
+def normalize_y(y):
+    return ((y - board_y) / 15) + 1
 
 def makeBrick(driver):
     # This is where the magic happens so to speak
@@ -212,30 +303,39 @@ def makeBrick(driver):
 
     driver_trail.append(new_brick)
 
+    return (normalize_x(new_brick.rect.left), normalize_y(new_brick.rect.top))
 
-def update_board(drivers, overseer, board):
+
+def update_board(drivers, overseer, board, g):
     
     screen.fill(BLACK)
     draw_board()
 
-    x = 0
     for driver in drivers:
-        x = x + 1
-
-        wall_up, wall_right, wall_down, wall_left = False, False, False, False
+        
+        best_up, best_right, best_down, best_left, wall_up, wall_right, wall_down, wall_left = (False,) * 8
 
         for driver2 in drivers:
             if driver2 != driver:
                 if pygame.sprite.collide_rect(driver, driver2):
-                    return reset(drivers, overseer, board)
+                    reset(drivers, overseer)
+                    return getNewBoard()
 
-        update_driver_y = ((driver.rect.top - board_y) / 15) + 1
-        update_driver_x = ((driver.rect.left - board_x) / 15) + 1
+        update_driver_y = normalize_y(driver.rect.top)
+        update_driver_x = normalize_x(driver.rect.left)
 
         if board[update_driver_y][update_driver_x] != 0:
-            return reset(drivers, overseer, board)
+            reset(drivers, overseer)
+            return getNewBoard()
 
-        if x > 1:
+        if drivers[0] != driver:
+            
+            new_board = list(board)
+            
+            flood_up = flood_fill(update_driver_x, update_driver_y - 1, new_board, driver.dir)
+            flood_right = flood_fill(update_driver_x + 1, update_driver_y, new_board, driver.dir)
+            flood_down = flood_fill(update_driver_x, update_driver_y + 1, new_board, driver.dir)
+            flood_left = flood_fill(update_driver_x - 1, update_driver_y, new_board, driver.dir)
 
             if board[update_driver_y - 1][update_driver_x] != 0:
                 wall_up = True
@@ -244,7 +344,7 @@ def update_board(drivers, overseer, board):
             if board[update_driver_y + 1][update_driver_x] != 0:
                 wall_down = True
             if board[update_driver_y][update_driver_x - 1] != 0:
-                wall_left = True       
+                wall_left = True
 
             if wall_up and driver.dir == 0:
                 
@@ -352,8 +452,8 @@ def keyCheck(user):
 def main():
 
     # Initialize user and game
-    user = Driver(56 * 15 + board_x, 24 * 15 + board_y, 3, 'tron.png', LIGHTBLUE, 'brick.png')
-    enemy1 = Driver(7 * 15 + board_x, 24 * 15 + board_y, 1, 'cp.png', RED, 'brick2.png')
+    user = Driver(user_start_x, user_start_y, user_dir, user_image, user_color, user_brick)
+    enemy1 = Driver(enemy1_start_x, enemy1_start_y, enemy1_dir, enemy1_image, enemy1_color, enemy1_brick)
     
     drivers = []
     gameOn = True
@@ -363,9 +463,10 @@ def main():
     drivers.append(user)
     drivers.append(enemy1)
 
-    # Make board
+    # Make board (For collision purposes mainly for user)
+    # Make graph (For AI purposes)
     board = getNewBoard()
-    
+    g = Graph(board)
 
     while gameOn:
         clock.tick(50)
@@ -378,7 +479,7 @@ def main():
             if event.type == move:
                 for driver in drivers:
                     driver.move()
-                board = update_board(drivers, overseer, board)
+                board = update_board(drivers, overseer, board, g)
 
     pygame.quit()
 
