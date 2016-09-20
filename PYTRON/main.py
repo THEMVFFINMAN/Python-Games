@@ -310,28 +310,45 @@ def update_board(drivers, overseer, board, g):
             if board[update_driver_y][update_driver_x - 1] != 0:
                 wall_left = True
 
+            flood_up, flood_right, flood_down, flood_left = (0,)*4
+
             if not wall_up:
-                flood_up = g.get_path_size(update_driver_y - 1, update_driver_x)
-            else:
-                flood_up = 0
+                flood_up = g.get_path_size(update_driver_y - 1, update_driver_x)                
             if not wall_right:
                 flood_right = g.get_path_size(update_driver_y, update_driver_x + 1)
-            else:
-                flood_right = 0
             if not wall_down:
                 flood_down = g.get_path_size(update_driver_y + 1, update_driver_x)
-            else:
-                flood_down = 0
             if not wall_left:
                 flood_left = g.get_path_size(update_driver_y, update_driver_x - 1)
-            else:
-                flood_left = 0
-
-            if 
-
-            print update_driver_x, update_driver_y
 
             print flood_up, flood_right, flood_down, flood_left
+
+
+
+            if flood_up > flood_right and flood_up > flood_left:
+                wall_left = True
+                wall_right = True
+                if flood_up > flood_down:
+                    wall_down = True
+            elif flood_down > flood_right and flood_down > flood_left:
+                wall_left = True
+                wall_right = True
+                if flood_down > flood_up:
+                    wall_up = True
+            if flood_left > flood_down and flood_left > flood_up:
+                wall_up = True
+                wall_down = True
+                if flood_left > flood_right:
+                    wall_right = True
+            elif flood_right > flood_down and flood_left > flood_up:
+                wall_up = True
+                wall_down = True
+                if flood_right > flood_left:
+                    wall_left = True
+
+
+
+
 
             if wall_up and driver.dir == 0:
                 
