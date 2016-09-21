@@ -2,7 +2,7 @@ import math
 import pygame
 import random
 import sys
-
+import time
 pygame.init()
 
 # Initializing some colors for cleaner looks throughout
@@ -50,7 +50,8 @@ move = pygame.USEREVENT + 1
 pygame.time.set_timer(move, game_speed)
 
 up, right, down, left = (False,)*4
-    
+
+
 def draw_board():
     # This just draws the grid lines that make up the board
     for k in range(0, block_width + 1):
@@ -61,54 +62,72 @@ def draw_board():
         pygame.draw.line(screen, GREEN, (board_x - 1, board_y - 1 + (k * 15)),
                          (board_width + board_x - 1, board_y - 1 + (k * 15)), 2)
 
-class Graph(object):
-    def __init__(self, graph_list):
-        self.graph_dict = self.generate(graph_list)
 
-    def generate(cls, graph_list):
+class Graph(object):
+    # The graph is a dict where the key is a tuple of coordinates and the values are the
+    # active neighbor coordinates in the form of a tuple
+    def __init__(self):
+        self.graph_dict = []
+        self.generate_new_graph()
+
+    def generate_new_graph(cls):
+        # This will generate the graph of coordinates
         graph_dict = {}
         i = 1
-        for row in graph_list[:-2]:
+        for row in range(1, block_height + 1):
             j = 1
-            for value in row[:-2]:
+            for value in range(1, block_width + 1):
                 graph_dict[(i, j)] = []
-                if i + 1 < len(graph_list) - 1:
+                if i + 1 < block_height + 1:
                     graph_dict[(i, j)].append((i + 1, j))
                 if i - 1 >= 1:
                     graph_dict[(i, j)].append((i - 1, j))
-                if j + 1 < len (row) - 1:
+                if j + 1 < block_width + 1:
                     graph_dict[(i, j)].append((i, j + 1))
                 if j - 1 >= 1:
                     graph_dict[(i, j)].append((i, j - 1))
                 j += 1
             i += 1
-        return graph_dict
-
+        cls.graph_dict = graph_dict
+        print graph_dict[(24, 63)]
+    
     def get_path_size(cls, x, y):
-
+        # This is the floodfill at work
         if ((x, y)) in cls.graph_dict:
+            # If the coordinate is in the dict, as in if it isn't a driver wall
+            # Then it runs, otherwise it returns 0
             path = set()
             checked = []
             path.add((x, y))
             checked.append((x, y))
 
+            # Instead of recursion, I just continually add things to the queue and then pop them as I go
             while checked:
                 coord = checked.pop()
                 for element in cls.graph_dict[coord]:
+                    # I use a set and check the set because checking if it's in a set is constant time
+                    # This also prevents me from adding the same coordinates infinite times
                     if element not in path:
                         path.add(element)
-                        checked.append(element)          
-            
+                        checked.append(element)
+
             return len(path)
-        else:
-            return 0
+
+        return 0
 
     def remove_node(cls, x, y):
+        # First it checks all its neighbors (keys) and removes the edges to itself (values)
+        # Then it removes itself (key) from the graph
         for coord in cls.graph_dict[(x, y)]:
             cls.graph_dict[coord].remove((x, y))
 
+        cls.graph_dict.pop((x, y), None)
+
+
 class Overseer(object):
     # Maintains score, reset, stuff like that
+
+    # TODO Implement score
 
     def __init__(self):
         self.user_score = 0
@@ -129,24 +148,25 @@ class Brick(object):
         self.left = False
 
     def update_draw(cls):
-        # Determines if a line for an outline needs to be drawn and draws it 
+        # Determines if a line for an outline needs to be drawn and draws it
+        # This section is what makes the driver's tail stick together
         screen.blit(cls.image, cls.rect)
         if cls.top is False:
-            pygame.draw.line(screen, cls.outline_color, (cls.rect.left, cls.rect.top), 
-            (cls.rect.left + 14, cls.rect.top), 1)
+            pygame.draw.line(screen, cls.outline_color, (cls.rect.left, cls.rect.top),
+                             (cls.rect.left + 14, cls.rect.top), 1)
         if cls.right is False:
-            pygame.draw.line(screen, cls.outline_color, (cls.rect.left + 14, cls.rect.top), 
-            (cls.rect.left + 14, cls.rect.top + 14), 1)
+            pygame.draw.line(screen, cls.outline_color, (cls.rect.left + 14, cls.rect.top),
+                             (cls.rect.left + 14, cls.rect.top + 14), 1)
         if cls.bottom is False:
-            pygame.draw.line(screen, cls.outline_color, (cls.rect.left, cls.rect.top + 14), 
-            (cls.rect.left + 14, cls.rect.top + 14), 1)
+            pygame.draw.line(screen, cls.outline_color, (cls.rect.left, cls.rect.top + 14),
+                             (cls.rect.left + 14, cls.rect.top + 14), 1)
         if cls.left is False:
-            pygame.draw.line(screen, cls.outline_color, (cls.rect.left, cls.rect.top), 
-            (cls.rect.left, cls.rect.top + 14), 1)
+            pygame.draw.line(screen, cls.outline_color, (cls.rect.left, cls.rect.top),
+                             (cls.rect.left, cls.rect.top + 14), 1)
 
 
 class Driver(object):
-
+    # Driver class for both user and enemies
     def __init__(self, x, y, direction, image, color, brickimage):
         self.image = pygame.image.load(image).convert()
         self.rect = self.image.get_rect()
@@ -159,7 +179,7 @@ class Driver(object):
         self.driver_trail = []
 
     def update_draw(cls):
-        screen.blit(cls.image, cls.rect)    
+        screen.blit(cls.image, cls.rect)
 
     # These will rotate the image to face the correct way and change the direction as well
     def up(cls):
@@ -195,6 +215,7 @@ class Driver(object):
             cls.dir = 3
 
     def move(cls):
+        # Just moves the little rectangle around
         if cls.dir == 0:
             cls.rect.top = cls.rect.top - 15
         elif cls.dir == 1:
@@ -205,6 +226,7 @@ class Driver(object):
             cls.rect.left = cls.rect.left - 15
 
     def reset(cls, x, y, direction, image):
+        # Resets the driver, used after crashes and the like
         cls.image = pygame.image.load(image).convert()
         cls.rect = cls.image.get_rect()
         cls.rotated = False
@@ -212,7 +234,10 @@ class Driver(object):
         cls.rect.top = y
         cls.dir = direction
 
+
 def getNewBoard():
+    # This gets you a brand new board on reset and initial start
+
     board = [[0 for k in range(0, block_width + 2)] for j in range(0, block_height + 2)]
 
     for i in range(0, block_width + 2):
@@ -227,31 +252,36 @@ def getNewBoard():
 
 
 def reset(drivers, overseer):
-    
+    # Reset function for crashes and the like
     drivers[0].reset(user_start_x, user_start_y, user_dir, user_image)
     drivers[1].reset(enemy1_start_x, enemy1_start_y, enemy1_dir, enemy1_image)
 
     for driver in drivers:
         del driver.driver_trail[:]
 
+
 def normalize_x(x):
+    # This gets an x pixel value and finds its corresponding value in the array
     return ((x - board_x) / 15) + 1
 
+
 def normalize_y(y):
+    # This gets a y pixel value and finds its corresponding value in the array
     return ((y - board_y) / 15) + 1
 
+
 def makeBrick(driver):
-    # This is where the magic happens so to speak
-    # I wanted to find a way to draw an outline around the blocks in the most efficient way possible
-    # Because I had to loop through all the bricks to print them at least once, I added the check code
-    # to determine if it needed an outline or not. For my purposes, it is fast and efficient
-    
+    # This adds the tail behind the driver
+    # Every time, it checks this brick with its neighbors' bricks
+    # In order to update them to say they now have a block side or not
+    # This is where the logic comes in for making the driver's tail stick together
+
     new_brick = Brick(driver.rect.left, driver.rect.top, driver.color, driver.brickimage)
     driver_trail = driver.driver_trail
-    
+
     for ibrick in driver_trail:
         ibrick.update_draw()
-        
+
         if new_brick.rect.top == ibrick.rect.top:
             if new_brick.rect.left == ibrick.rect.left - 15:
                 new_brick.right = True
@@ -267,53 +297,63 @@ def makeBrick(driver):
                 new_brick.top = True
                 ibrick.bottom = True
 
+    # After checking if the new brick is touching any others, it adds it to the tail
     driver_trail.append(new_brick)
 
+    # It also returns its normalized location to remove it from the graph
     return normalize_x(new_brick.rect.left), normalize_y(new_brick.rect.top)
 
 
-def update_board(drivers, overseer, board, g):
+def update_board(drivers, overseer, g):
+    # Start with a clear screen
     
     screen.fill(BLACK)
     draw_board()
 
     for driver in drivers:
-        
-        best_up, best_right, best_down, best_left, wall_up, wall_right, wall_down, wall_left = (False,) * 8
 
+        wall_up, wall_right, wall_down, wall_left = (False,) * 4
+
+        # Checks if the drivers hit each other, it will score as a tie
         for driver2 in drivers:
             if driver2 != driver:
                 if pygame.sprite.collide_rect(driver, driver2):
                     reset(drivers, overseer)
                     return False
 
+        # Gets its normalized location for the graph
         update_driver_y = normalize_y(driver.rect.top)
         update_driver_x = normalize_x(driver.rect.left)
 
-        if board[update_driver_y][update_driver_x] != 0:
+        # If the node has been removed (meaning it's a wall)
+        # Then the driver crashes and the game resets
+        if (update_driver_y, update_driver_x) not in g.graph_dict:
             reset(drivers, overseer)
             return False
 
-        added_brick_x, added_brick_y = makeBrick(driver)                         
+        # Adds the brick and removes it from the graph
+        added_brick_x, added_brick_y = makeBrick(driver)
         g.remove_node(added_brick_y, added_brick_x)
 
+        # If the driver isn't the user, then add some ai
         if drivers[0] != driver:
-            
-            new_board = list(board)
 
-            if board[update_driver_y - 1][update_driver_x] != 0:
+            # Checks which sides have walls on them
+            if (update_driver_y - 1, update_driver_x) not in g.graph_dict:
                 wall_up = True
-            if board[update_driver_y][update_driver_x + 1] != 0:
+            if (update_driver_y, update_driver_x + 1) not in g.graph_dict:
                 wall_right = True
-            if board[update_driver_y + 1][update_driver_x] != 0:
+            if (update_driver_y + 1, update_driver_x) not in g.graph_dict:
                 wall_down = True
-            if board[update_driver_y][update_driver_x - 1] != 0:
+            if (update_driver_y, update_driver_x - 1) not in g.graph_dict:
                 wall_left = True
 
+            # The flood variables initialized
             flood_up, flood_right, flood_down, flood_left = (0,)*4
 
+            # Checks how many open spaces are on each side of the driver
             if not wall_up:
-                flood_up = g.get_path_size(update_driver_y - 1, update_driver_x)                
+                flood_up = g.get_path_size(update_driver_y - 1, update_driver_x)
             if not wall_right:
                 flood_right = g.get_path_size(update_driver_y, update_driver_x + 1)
             if not wall_down:
@@ -321,10 +361,7 @@ def update_board(drivers, overseer, board, g):
             if not wall_left:
                 flood_left = g.get_path_size(update_driver_y, update_driver_x - 1)
 
-            print flood_up, flood_right, flood_down, flood_left
-
-
-
+            # Finds the most efficient turn and walls up the other sides
             if flood_up > flood_right and flood_up > flood_left:
                 wall_left = True
                 wall_right = True
@@ -346,12 +383,9 @@ def update_board(drivers, overseer, board, g):
                 if flood_right > flood_left:
                     wall_left = True
 
-
-
-
-
+            # Moves the enemy drivers
             if wall_up and driver.dir == 0:
-                
+
                 if wall_left:
                     print "upleft"
                     driver.right()
@@ -364,9 +398,9 @@ def update_board(drivers, overseer, board, g):
                         driver.right()
                     else:
                         driver.left()
-                        
+
             if wall_right and driver.dir == 1:
-                
+
                 if wall_up:
                     print "rightup"
                     driver.down()
@@ -379,9 +413,9 @@ def update_board(drivers, overseer, board, g):
                         driver.down()
                     else:
                         driver.up()
-                        
+
             if wall_down and driver.dir == 2:
-                
+
                 if wall_left:
                     print "downleft"
                     driver.right()
@@ -394,9 +428,9 @@ def update_board(drivers, overseer, board, g):
                         driver.right()
                     else:
                         driver.left()
-                        
+
             if wall_left and driver.dir == 3:
-                
+
                 if wall_up:
                     print "leftup"
                     driver.down()
@@ -410,12 +444,7 @@ def update_board(drivers, overseer, board, g):
                     else:
                         driver.up()
 
-        if driver.color == LIGHTBLUE:
-            board[update_driver_y][update_driver_x] = 1
-        else:
-            board[update_driver_y][update_driver_x] = 3
-        
-        driver.update_draw()           
+        driver.update_draw()
 
     pygame.display.flip()
 
@@ -428,12 +457,12 @@ def keyCheck(user):
     # Extra checks have been put in place due to how pygame handles pressed
     # It will only register the moment it has been pressed and no more, even if it is held down
     global left, right, up, down
-    
+
     if pygame.key.get_pressed()[pygame.K_UP] and not up:
         up = True
         user.up()
     else:
-        up = False    
+        up = False
     if pygame.key.get_pressed()[pygame.K_RIGHT] and not right:
         right = True
         user.right()
@@ -456,7 +485,7 @@ def main():
     # Initialize user and game
     user = Driver(user_start_x, user_start_y, user_dir, user_image, user_color, user_brick)
     enemy1 = Driver(enemy1_start_x, enemy1_start_y, enemy1_dir, enemy1_image, enemy1_color, enemy1_brick)
-    
+
     drivers = []
     gameOn = True
     overseer = Overseer()
@@ -465,26 +494,24 @@ def main():
     drivers.append(user)
     drivers.append(enemy1)
 
-    # Make board (For collision purposes mainly for user)
-    # Make graph (For AI purposes)
-    board = getNewBoard()
-    g = Graph(board)
+    # Make graph of board
+    g = Graph()
 
     while gameOn:
         clock.tick(50)
-        
+
+        # The actual while loop that runs the game
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                gameOn = False 
+                gameOn = False
             if event.type == pygame.KEYDOWN:
                 keyCheck(user)
             if event.type == move:
                 for driver in drivers:
                     driver.move()
-                if not update_board(drivers, overseer, board, g):
-                    board = getNewBoard()
-                    g = Graph(board)
-            
+                if not update_board(drivers, overseer, g):
+                    g.generate_new_graph()
+
     pygame.quit()
 
 if __name__ == "__main__":
