@@ -26,9 +26,12 @@ block_width = 64
 block_height = 48
 fill_limit = 750
 
-user_start_x = 45 * 15 + board_x
+user_start_x = 40 * 15 + board_x
 user_start_y = 23 * 15 + board_y
 user_dir = 1
+#user_start_x = 56 * 15 + board_x
+#user_start_y = 24 * 15 + board_y
+#user_dir = 3
 user_image = 'tron.png'
 user_color = LIGHTBLUE
 user_brick = 'brick.png'
@@ -48,8 +51,6 @@ pygame.display.set_caption("PYTRON")
 clock = pygame.time.Clock()
 move = pygame.USEREVENT + 1
 pygame.time.set_timer(move, game_speed)
-
-up, right, down, left = (False,)*4
 
 
 def draw_board():
@@ -84,7 +85,6 @@ class Graph(object):
                     graph_dict[(row, column)].append((row, column + 1))
                 if column - 1 >= 0:
                     graph_dict[(row, column)].append((row, column - 1))
-
         cls.graph_dict = graph_dict
     
     def get_path_size(cls, x, y):
@@ -181,34 +181,34 @@ class Driver(object):
     def up(cls):
         if cls.dir == 1:
             cls.image = pygame.transform.rotate(cls.image, 90)
-            cls.dir = 0
         elif cls.dir == 3:
             cls.image = pygame.transform.rotate(cls.image, 270)
-            cls.dir = 0
+
+        cls.dir = 0
 
     def right(cls):
         if cls.dir == 0:
             cls.image = pygame.transform.rotate(cls.image, 270)
-            cls.dir = 1
         elif cls.dir == 2:
             cls.image = pygame.transform.rotate(cls.image, 90)
-            cls.dir = 1
+
+        cls.dir = 1
 
     def down(cls):
         if cls.dir == 1:
             cls.image = pygame.transform.rotate(cls.image, 270)
-            cls.dir = 2
         elif cls.dir == 3:
             cls.image = pygame.transform.rotate(cls.image, 90)
-            cls.dir = 2
+
+        cls.dir = 2
 
     def left(cls):
         if cls.dir == 0:
             cls.image = pygame.transform.rotate(cls.image, 90)
-            cls.dir = 3
         elif cls.dir == 2:
             cls.image = pygame.transform.rotate(cls.image, 270)
-            cls.dir = 3
+
+        cls.dir = 3
 
     def move(cls):
         # Just moves the little rectangle around
@@ -345,7 +345,7 @@ def update_board(drivers, overseer, g):
                 wall_left = True
 
             # The flood variables initialized
-            flood_up, flood_right, flood_down, flood_left = (0,)*4
+            flood_up, flood_right, flood_down, flood_left, flood_free_up, flood_free_right, flood_free_down, flood_free_left = (0,)*8
 
             # Checks how many open spaces are on each side of the driver
             if not wall_up:
@@ -363,7 +363,7 @@ def update_board(drivers, overseer, g):
                 wall_right = True
                 if flood_up > flood_down:
                     wall_down = True
-            elif flood_down > flood_right and flood_down > flood_left:
+            if flood_down > flood_right and flood_down > flood_left:
                 wall_left = True
                 wall_right = True
                 if flood_down > flood_up:
@@ -373,12 +373,15 @@ def update_board(drivers, overseer, g):
                 wall_down = True
                 if flood_left > flood_right:
                     wall_right = True
-            elif flood_right > flood_down and flood_left > flood_up:
+            if flood_right > flood_down and flood_right > flood_up:
                 wall_up = True
                 wall_down = True
                 if flood_right > flood_left:
                     wall_left = True
 
+            print flood_up, flood_right, flood_down, flood_left
+            print wall_up, wall_right, wall_down, wall_left
+            
             # Moves the enemy drivers
             if wall_up and driver.dir == 0:
 
@@ -452,28 +455,19 @@ def keyCheck(user):
     # This checks if a key has been pressed
     # Extra checks have been put in place due to how pygame handles pressed
     # It will only register the moment it has been pressed and no more, even if it is held down
-    global left, right, up, down
 
-    if pygame.key.get_pressed()[pygame.K_UP] and not up:
+    if pygame.key.get_pressed()[pygame.K_UP] and user.dir != 2:
         up = True
         user.up()
-    else:
-        up = False
-    if pygame.key.get_pressed()[pygame.K_RIGHT] and not right:
+    if pygame.key.get_pressed()[pygame.K_RIGHT] and user.dir != 3:
         right = True
         user.right()
-    else:
-        right = False
-    if pygame.key.get_pressed()[pygame.K_DOWN] and not down:
+    if pygame.key.get_pressed()[pygame.K_DOWN] and user.dir != 0:
         down = True
         user.down()
-    else:
-        down = False
-    if pygame.key.get_pressed()[pygame.K_LEFT] and not left:
+    if pygame.key.get_pressed()[pygame.K_LEFT] and user.dir != 1:
         left = True
         user.left()
-    else:
-        left = False
 
 
 def main():
@@ -481,7 +475,6 @@ def main():
     # Initialize user and game
     user = Driver(user_start_x, user_start_y, user_dir, user_image, user_color, user_brick)
     enemy1 = Driver(enemy1_start_x, enemy1_start_y, enemy1_dir, enemy1_image, enemy1_color, enemy1_brick)
-
     drivers = []
     gameOn = True
     overseer = Overseer()
