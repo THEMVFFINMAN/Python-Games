@@ -2,7 +2,7 @@ import math
 import pygame
 import random
 import sys
-import time
+
 pygame.init()
 
 # Initializing some colors for cleaner looks throughout
@@ -73,23 +73,19 @@ class Graph(object):
     def generate_new_graph(cls):
         # This will generate the graph of coordinates
         graph_dict = {}
-        i = 1
-        for row in range(1, block_height + 1):
-            j = 1
-            for value in range(1, block_width + 1):
-                graph_dict[(i, j)] = []
-                if i + 1 < block_height + 1:
-                    graph_dict[(i, j)].append((i + 1, j))
-                if i - 1 >= 1:
-                    graph_dict[(i, j)].append((i - 1, j))
-                if j + 1 < block_width + 1:
-                    graph_dict[(i, j)].append((i, j + 1))
-                if j - 1 >= 1:
-                    graph_dict[(i, j)].append((i, j - 1))
-                j += 1
-            i += 1
+        for row in range(0, block_height):
+            for column in range(0, block_width):
+                graph_dict[(row, column)] = []
+                if row + 1 < block_height:
+                    graph_dict[(row, column)].append((row + 1, column))
+                if row - 1 >= 0:
+                    graph_dict[(row, column)].append((row - 1, column))
+                if column + 1 < block_width:
+                    graph_dict[(row, column)].append((row, column + 1))
+                if column - 1 >= 0:
+                    graph_dict[(row, column)].append((row, column - 1))
+
         cls.graph_dict = graph_dict
-        print graph_dict[(24, 63)]
     
     def get_path_size(cls, x, y):
         # This is the floodfill at work
@@ -262,12 +258,12 @@ def reset(drivers, overseer):
 
 def normalize_x(x):
     # This gets an x pixel value and finds its corresponding value in the array
-    return ((x - board_x) / 15) + 1
+    return ((x - board_x) / 15)
 
 
 def normalize_y(y):
     # This gets a y pixel value and finds its corresponding value in the array
-    return ((y - board_y) / 15) + 1
+    return ((y - board_y) / 15)
 
 
 def makeBrick(driver):
