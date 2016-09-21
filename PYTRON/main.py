@@ -26,12 +26,12 @@ block_width = 64
 block_height = 48
 fill_limit = 750
 
-user_start_x = 40 * 15 + board_x
-user_start_y = 23 * 15 + board_y
-user_dir = 1
-#user_start_x = 56 * 15 + board_x
-#user_start_y = 24 * 15 + board_y
-#user_dir = 3
+#user_start_x = 40 * 15 + board_x
+#user_start_y = 23 * 15 + board_y
+#user_dir = 1
+user_start_x = 56 * 15 + board_x
+user_start_y = 24 * 15 + board_y
+user_dir = 3
 user_image = 'tron.png'
 user_color = LIGHTBLUE
 user_brick = 'brick.png'
@@ -378,9 +378,6 @@ def update_board(drivers, overseer, g):
                 wall_down = True
                 if flood_right > flood_left:
                     wall_left = True
-
-            print flood_up, flood_right, flood_down, flood_left
-            print wall_up, wall_right, wall_down, wall_left
             
             # Moves the enemy drivers
             if wall_up and driver.dir == 0:
@@ -450,25 +447,20 @@ def update_board(drivers, overseer, g):
     return True
 
 
-def keyCheck(user):
+def keyCheck(key_pressed, user):
 
     # This checks if a key has been pressed
-    # Extra checks have been put in place due to how pygame handles pressed
-    # It will only register the moment it has been pressed and no more, even if it is held down
+    # It then adds the required function to a queue
+    # When the timing of the clock is right, it pops the next move off
 
-    if pygame.key.get_pressed()[pygame.K_UP] and user.dir != 2:
-        up = True
-        user.up()
-    if pygame.key.get_pressed()[pygame.K_RIGHT] and user.dir != 3:
-        right = True
-        user.right()
-    if pygame.key.get_pressed()[pygame.K_DOWN] and user.dir != 0:
-        down = True
-        user.down()
-    if pygame.key.get_pressed()[pygame.K_LEFT] and user.dir != 1:
-        left = True
-        user.left()
-
+    if key_pressed == 273 and user.dir != 2:
+        return user.up
+    if key_pressed == 275 and user.dir != 3:
+        return user.right
+    if key_pressed == 274 and user.dir != 0:
+        return user.down
+    if key_pressed == 276 and user.dir != 1:
+        return user.left
 
 def main():
 
@@ -486,6 +478,10 @@ def main():
     # Make graph of board
     g = Graph()
 
+    # Allows you to press keys in sequence faster than the game ticks
+    # So that it will pop the next command when needed
+    keys_pressed = []
+
     while gameOn:
         clock.tick(50)
 
@@ -494,8 +490,15 @@ def main():
             if event.type == pygame.QUIT:
                 gameOn = False
             if event.type == pygame.KEYDOWN:
-                keyCheck(user)
+                key_checked = keyCheck(event.key, user)
+                if key_checked:
+                    keys_pressed.insert(0, key_checked)
             if event.type == move:
+                
+                # If there are any keys added to the queue, it pops them and then runs them
+                if keys_pressed:
+                    print keys_pressed.pop()()
+                    
                 for driver in drivers:
                     driver.move()
                 if not update_board(drivers, overseer, g):
