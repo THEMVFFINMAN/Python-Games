@@ -293,8 +293,6 @@ def reset(drivers, overseer):
     for driver in drivers:
         del driver.driver_trail[:]
 
-    raw_input()
-
 
 def normalize_x(x):
     # This gets an x pixel value and finds its corresponding value in the array
@@ -354,7 +352,6 @@ def update_board(drivers, overseer, g):
         for driver2 in drivers:
             if driver2 != driver:
                 if pygame.sprite.collide_rect(driver, driver2):
-                    reset(drivers, overseer)
                     return False
 
         # Gets its normalized location for the graph
@@ -364,9 +361,6 @@ def update_board(drivers, overseer, g):
         # If the node has been removed (meaning it's a wall)
         # Then the driver crashes and the game resets
         if (update_driver_y, update_driver_x) not in g.graph_dict:
-            print driver.color
-            g.print_graph()
-            reset(drivers, overseer)
             return False
 
         # Adds the brick and removes it from the graph
@@ -377,15 +371,34 @@ def update_board(drivers, overseer, g):
         if drivers[0] != driver:
 
             g.copy_graph()
+
+            free_path = True
+            future_x = normalize_x(drivers[0].rect.left)
+            future_y = normalize_y(drivers[0].rect.top)
             
+            if  drivers[0].dir == 0 and driver.rect.left != drivers[0].rect.left:
+                
+                while free_path:
+                    future_y -= 1
+                    free_path = g.remove_future_node(future_y, future_x)
+
+            if  drivers[0].dir == 1 and driver.rect.top != drivers[0].rect.top:
+                
+                while free_path:
+                    future_x += 1
+                    free_path = g.remove_future_node(future_y, future_x)
+
+            if  drivers[0].dir == 2 and driver.rect.left != drivers[0].rect.left:
+                
+                while free_path:
+                    future_y += 1
+                    free_path = g.remove_future_node(future_y, future_x)
 
             if  drivers[0].dir == 3 and driver.rect.top != drivers[0].rect.top:
-                free_left = True
-                future_x = normalize_x(drivers[0].rect.left)
-                future_y = normalize_y(drivers[0].rect.top)
-                while free_left:
+
+                while free_path:
                     future_x -= 1
-                    free_left = g.remove_future_node(future_y, future_x)
+                    free_path = g.remove_future_node(future_y, future_x)
 
             # Checks which sides have walls on them
             if (update_driver_y - 1, update_driver_x) not in g.future_graph:
@@ -409,8 +422,6 @@ def update_board(drivers, overseer, g):
                 flood_down = g.get_path_size(update_driver_y + 1, update_driver_x)
             if not wall_left:
                 flood_left = g.get_path_size(update_driver_y, update_driver_x - 1)
-
-            print flood_up, flood_right, flood_down, flood_left
 
             # Finds the most efficient turn and walls up the other sides
             if flood_up > flood_right and flood_up > flood_left:
@@ -557,7 +568,9 @@ def main():
                 for driver in drivers:
                     driver.move()
                 if not update_board(drivers, overseer, g):
+                    reset(drivers, overseer)
                     g.generate_new_graph()
+                    keys_pressed = []
 
     pygame.quit()
 
