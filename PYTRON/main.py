@@ -375,26 +375,31 @@ def update_board(drivers, overseer, g):
             free_path = True
             future_x = normalize_x(drivers[0].rect.left)
             future_y = normalize_y(drivers[0].rect.top)
+
+            # Almost too hard to explain this part in comments but basically
+            # this is what makes the imaginary wall in front of the driver
+            # the reason that it checks if the driver is close is to fix a specific
+            # use case that will be too hard to explain in comments
             
-            if  drivers[0].dir == 0 and driver.rect.left != drivers[0].rect.left:
+            if  drivers[0].dir == 0 and abs(driver.rect.left - drivers[0].rect.left) > 20:
                 
                 while free_path:
                     future_y -= 1
                     free_path = g.remove_future_node(future_y, future_x)
 
-            if  drivers[0].dir == 1 and driver.rect.top != drivers[0].rect.top:
+            if  drivers[0].dir == 1 and abs(driver.rect.top - drivers[0].rect.top) > 20:
                 
                 while free_path:
                     future_x += 1
                     free_path = g.remove_future_node(future_y, future_x)
 
-            if  drivers[0].dir == 2 and driver.rect.left != drivers[0].rect.left:
+            if  drivers[0].dir == 2 and abs(driver.rect.left - drivers[0].rect.left) > 20:
                 
                 while free_path:
                     future_y += 1
                     free_path = g.remove_future_node(future_y, future_x)
 
-            if  drivers[0].dir == 3 and driver.rect.top != drivers[0].rect.top:
+            if  drivers[0].dir == 3 and abs(driver.rect.top - drivers[0].rect.top) > 20:
 
                 while free_path:
                     future_x -= 1
