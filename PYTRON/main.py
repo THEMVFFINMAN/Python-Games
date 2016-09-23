@@ -1,3 +1,4 @@
+import copy
 import math
 import pygame
 import random
@@ -68,7 +69,8 @@ class Graph(object):
     # The graph is a dict where the key is a tuple of coordinates and the values are the
     # active neighbor coordinates in the form of a tuple
     def __init__(self):
-        self.graph_dict = []
+        self.graph_dict = {}
+        self.future_graph = {}
         self.generate_new_graph()
 
     def generate_new_graph(cls):
@@ -89,7 +91,7 @@ class Graph(object):
     
     def get_path_size(cls, x, y):
         # This is the floodfill at work
-        if ((x, y)) in cls.graph_dict:
+        if ((x, y)) in cls.future_graph:
             # If the coordinate is in the dict, as in if it isn't a driver wall
             # Then it runs, otherwise it returns 0
             path = set()
@@ -100,7 +102,7 @@ class Graph(object):
             # Instead of recursion, I just continually add things to the queue and then pop them as I go
             while checked:
                 coord = checked.pop()
-                for element in cls.graph_dict[coord]:
+                for element in cls.future_graph[coord]:
                     # I use a set and check the set because checking if it's in a set is constant time
                     # This also prevents me from adding the same coordinates infinite times
                     if element not in path:
@@ -111,6 +113,30 @@ class Graph(object):
 
         return 0
 
+    def copy_graph(cls):
+        cls.future_graph = copy.deepcopy(cls.graph_dict)
+
+    def print_graph(cls):
+        # This was an invaluable tool when making the future_graph to visibly see it
+        
+        arrayify = [[0 for x in range(0, block_width)] for y in range(0, block_height)]
+        for i in range(0, block_width):
+            for j in range(0, block_height):
+                if (j, i) in cls.future_graph:
+                    arrayify[j][i] = 1
+
+        for row in arrayify:
+            print row
+
+        arrayify = [[0 for x in range(0, block_width)] for y in range(0, block_height)]
+        for i in range(0, block_width):
+            for j in range(0, block_height):
+                if (j, i) in cls.graph_dict:
+                    arrayify[j][i] = 1
+
+        for row in arrayify:
+            print row
+
     def remove_node(cls, x, y):
         # First it checks all its neighbors (keys) and removes the edges to itself (values)
         # Then it removes itself (key) from the graph
@@ -118,6 +144,18 @@ class Graph(object):
             cls.graph_dict[coord].remove((x, y))
 
         cls.graph_dict.pop((x, y), None)
+
+    def remove_future_node(cls, x, y):
+
+        if (x, y) in cls.future_graph:
+            for coord in cls.future_graph[(x, y)]:
+                cls.future_graph[coord].remove((x, y))
+
+            cls.future_graph.pop((x, y), None)
+
+            return True
+        else:
+            return False
 
 
 class Overseer(object):
@@ -255,6 +293,8 @@ def reset(drivers, overseer):
     for driver in drivers:
         del driver.driver_trail[:]
 
+    raw_input()
+
 
 def normalize_x(x):
     # This gets an x pixel value and finds its corresponding value in the array
@@ -324,6 +364,8 @@ def update_board(drivers, overseer, g):
         # If the node has been removed (meaning it's a wall)
         # Then the driver crashes and the game resets
         if (update_driver_y, update_driver_x) not in g.graph_dict:
+            print driver.color
+            g.print_graph()
             reset(drivers, overseer)
             return False
 
@@ -334,18 +376,29 @@ def update_board(drivers, overseer, g):
         # If the driver isn't the user, then add some ai
         if drivers[0] != driver:
 
-            # Checks which sides have walls on them
-            if (update_driver_y - 1, update_driver_x) not in g.graph_dict:
-                wall_up = True
-            if (update_driver_y, update_driver_x + 1) not in g.graph_dict:
-                wall_right = True
-            if (update_driver_y + 1, update_driver_x) not in g.graph_dict:
-                wall_down = True
-            if (update_driver_y, update_driver_x - 1) not in g.graph_dict:
-                wall_left = True
+            g.copy_graph()
+            
 
+            if  drivers[0].dir == 3 and driver.rect.top != drivers[0].rect.top:
+                free_left = True
+                future_x = normalize_x(drivers[0].rect.left)
+                future_y = normalize_y(drivers[0].rect.top)
+                while free_left:
+                    future_x -= 1
+                    free_left = g.remove_future_node(future_y, future_x)
+
+            # Checks which sides have walls on them
+            if (update_driver_y - 1, update_driver_x) not in g.future_graph:
+                wall_up = True
+            if (update_driver_y, update_driver_x + 1) not in g.future_graph:
+                wall_right = True
+            if (update_driver_y + 1, update_driver_x) not in g.future_graph:
+                wall_down = True
+            if (update_driver_y, update_driver_x - 1) not in g.future_graph:
+                wall_left = True
+                
             # The flood variables initialized
-            flood_up, flood_right, flood_down, flood_left, flood_free_up, flood_free_right, flood_free_down, flood_free_left = (0,)*8
+            flood_up, flood_right, flood_down, flood_left = (0,)*4
 
             # Checks how many open spaces are on each side of the driver
             if not wall_up:
@@ -356,6 +409,8 @@ def update_board(drivers, overseer, g):
                 flood_down = g.get_path_size(update_driver_y + 1, update_driver_x)
             if not wall_left:
                 flood_left = g.get_path_size(update_driver_y, update_driver_x - 1)
+
+            print flood_up, flood_right, flood_down, flood_left
 
             # Finds the most efficient turn and walls up the other sides
             if flood_up > flood_right and flood_up > flood_left:
@@ -497,7 +552,7 @@ def main():
                 
                 # If there are any keys added to the queue, it pops them and then runs them
                 if keys_pressed:
-                    print keys_pressed.pop()()
+                    keys_pressed.pop()()
                     
                 for driver in drivers:
                     driver.move()
