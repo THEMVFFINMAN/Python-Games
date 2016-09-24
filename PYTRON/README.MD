@@ -30,11 +30,25 @@ So when it runs the flood fill, it gets 4 to its left side, 0 to its front, and 
 
 ![alt text](https://raw.githubusercontent.com/THEMVFFINMAN/Python-Games/master/PYTRON/image.png "AI1")
 
+This next image shows a larger example of the previous example. The AI hits a wall and has to make a decision, go left or right. 
+The AI can see that the left enclosure is smaller because the user driver's future trail is closing it up and so it will choose right. 
+
+![alt text](https://raw.githubusercontent.com/THEMVFFINMAN/Python-Games/master/PYTRON/ai2.PNG "AI2")
+
+Special checks have been put into place so that in the following image, the enemy AI can see the trap and choose to go down to avoid it. 
+
+![alt text](https://raw.githubusercontent.com/THEMVFFINMAN/Python-Games/master/PYTRON/ai3.PNG "AI3")
+
+But so that the user driver doesn't emit it wall in cases like the one below:
+
+![alt text](https://raw.githubusercontent.com/THEMVFFINMAN/Python-Games/master/PYTRON/ai4.PNG "AI4")
+
 
 ## TODO
 ======
 
-1. Actually implement score. 
-2. Have AI work with multiple AI drivers instead of just the user. 
-3. Delete the driver's tail on death to facilitate a multi driver game instead of just restart. 
-4. 
+1. Actually implement score
+2. Have AI work with multiple AI drivers instead of just the user
+3. Delete the driver's tail on death to facilitate a multi driver game instead of just restart
+4. Have AI maximize cling to walls when it knows that the user driver is not in its enclosure
+5. Some sort of aggressive AI would be kind of nice
