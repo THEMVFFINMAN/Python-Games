@@ -5,7 +5,7 @@ A pygame project based on the lightcycle games for Tron. While it is mostly work
 
 While the game is relatively efficient and fast, I am also looking for ways to make it increasingly faster. 
 
-## Implmenetation 
+## Implementation 
 ======
 
 Currently the board is represented by a strongly connected undirected graph using a dict data structure. 
@@ -30,6 +30,7 @@ and to both sides. To demonstrate this, I uploaded a few images.
 The first image depicts the enemy driver having to make a decision vs the user driver based on the AI. 
 As you can see, the user driver is emitting an invisible line to its front, and sides which the AI sees. 
 So when it runs the flood fill, it gets 4 to its left side, 0 to its front, and a bunch on its right so it chooses right.
+
 ![alt text](https://raw.githubusercontent.com/THEMVFFINMAN/Python-Games/master/PYTRON/image.png "AI1")
 
 
