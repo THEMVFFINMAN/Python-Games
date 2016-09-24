@@ -52,3 +52,10 @@ But so that the user driver doesn't emit it wall in cases like the one below:
 3. Delete the driver's tail on death to facilitate a multi driver game instead of just restart
 4. Have AI maximize cling to walls when it knows that the user driver is not in its enclosure
 5. Some sort of aggressive AI would be kind of nice
+
+
+### Working Example
+
+It shows what it avoids in the first run and how well it does it, but it also shows how you can trick it and what I need to fix in the second run. 
+
+![Progress as of 9_23_2016](GIF.gif "Working Example")
