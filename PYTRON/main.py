@@ -128,6 +128,8 @@ class Graph(object):
         for row in arrayify:
             print row
 
+        print
+
         arrayify = [[0 for x in range(0, block_width)] for y in range(0, block_height)]
         for i in range(0, block_width):
             for j in range(0, block_height):
@@ -381,29 +383,85 @@ def update_board(drivers, overseer, g):
             # the reason that it checks if the driver is close is to fix a specific
             # use case that will be too hard to explain in comments
             
-            if  drivers[0].dir == 0 and abs(driver.rect.left - drivers[0].rect.left) > 20:
-                
-                while free_path:
-                    future_y -= 1
-                    free_path = g.remove_future_node(future_y, future_x)
+            if  drivers[0].dir == 0:
 
-            if  drivers[0].dir == 1 and abs(driver.rect.top - drivers[0].rect.top) > 20:
-                
-                while free_path:
-                    future_x += 1
-                    free_path = g.remove_future_node(future_y, future_x)
+                if abs(driver.rect.left - drivers[0].rect.left) > 20:
+                    while free_path:
+                        future_y -= 1
+                        free_path = g.remove_future_node(future_y, future_x)
 
-            if  drivers[0].dir == 2 and abs(driver.rect.left - drivers[0].rect.left) > 20:
-                
-                while free_path:
-                    future_y += 1
-                    free_path = g.remove_future_node(future_y, future_x)
+                if abs(driver.rect.top - drivers[0].rect.top) > 20:
+                    free_path = True
+                    future_y = normalize_y(drivers[0].rect.top)
+                    while free_path:
+                        future_x -= 1
+                        free_path = g.remove_future_node(future_y, future_x)
 
-            if  drivers[0].dir == 3 and abs(driver.rect.top - drivers[0].rect.top) > 20:
+                    free_path = True
+                    future_x = normalize_x(drivers[0].rect.left)
+                    while free_path:
+                        future_x += 1
+                        free_path = g.remove_future_node(future_y, future_x)
 
-                while free_path:
-                    future_x -= 1
-                    free_path = g.remove_future_node(future_y, future_x)
+            if  drivers[0].dir == 1:
+
+                if abs(driver.rect.top - drivers[0].rect.top) > 20:
+                    while free_path:
+                        future_x += 1
+                        free_path = g.remove_future_node(future_y, future_x)
+
+                if abs(driver.rect.left - drivers[0].rect.left) > 20:
+                    free_path = True
+                    future_x = normalize_x(drivers[0].rect.left)
+                    while free_path:
+                        future_y -= 1
+                        free_path = g.remove_future_node(future_y, future_x)
+
+                    future_y = normalize_y(drivers[0].rect.top)
+                    free_path = True
+                    while free_path:
+                        future_y += 1
+                        free_path = g.remove_future_node(future_y, future_x)
+
+            if  drivers[0].dir == 2:
+
+                if abs(driver.rect.left - drivers[0].rect.left) > 20:
+                    while free_path:
+                        future_y += 1
+                        free_path = g.remove_future_node(future_y, future_x)
+
+                if abs(driver.rect.top - drivers[0].rect.top) > 20:
+                    free_path = True
+                    future_y = normalize_y(drivers[0].rect.top)
+                    while free_path:
+                        future_x -= 1
+                        free_path = g.remove_future_node(future_y, future_x)
+
+                    free_path = True
+                    future_x = normalize_x(drivers[0].rect.left)
+                    while free_path:
+                        future_x += 1
+                        free_path = g.remove_future_node(future_y, future_x)
+
+            if  drivers[0].dir == 3:
+
+                if abs(driver.rect.top - drivers[0].rect.top) > 20:
+                    while free_path:
+                        future_x -= 1
+                        free_path = g.remove_future_node(future_y, future_x)
+
+                if abs(driver.rect.left - drivers[0].rect.left) > 20:
+                    free_path = True
+                    future_x = normalize_x(drivers[0].rect.left)
+                    while free_path:
+                        future_y -= 1
+                        free_path = g.remove_future_node(future_y, future_x)
+
+                    free_path = True
+                    future_y = normalize_y(drivers[0].rect.top)
+                    while free_path:
+                        future_y += 1
+                        free_path = g.remove_future_node(future_y, future_x)
 
             # Checks which sides have walls on them
             if (update_driver_y - 1, update_driver_x) not in g.future_graph:
@@ -452,6 +510,8 @@ def update_board(drivers, overseer, g):
             
             # Moves the enemy drivers
             if wall_up and driver.dir == 0:
+                flooding = "{}, {}, {}, {}".format(flood_up, flood_right, flood_down, flood_left)
+                print flooding
 
                 if wall_left:
                     print "upleft"
@@ -467,6 +527,8 @@ def update_board(drivers, overseer, g):
                         driver.left()
 
             if wall_right and driver.dir == 1:
+                flooding = "{}, {}, {}, {}".format(flood_up, flood_right, flood_down, flood_left)
+                print flooding
 
                 if wall_up:
                     print "rightup"
@@ -482,6 +544,8 @@ def update_board(drivers, overseer, g):
                         driver.up()
 
             if wall_down and driver.dir == 2:
+                flooding = "{}, {}, {}, {}".format(flood_up, flood_right, flood_down, flood_left)
+                print flooding
 
                 if wall_left:
                     print "downleft"
@@ -497,6 +561,8 @@ def update_board(drivers, overseer, g):
                         driver.left()
 
             if wall_left and driver.dir == 3:
+                flooding = "{}, {}, {}, {}".format(flood_up, flood_right, flood_down, flood_left)
+                print flooding
 
                 if wall_up:
                     print "leftup"
