@@ -153,11 +153,32 @@ class Graph(object):
             for coord in cls.future_graph[(x, y)]:
                 cls.future_graph[coord].remove((x, y))
 
-            cls.future_graph.pop((x, y), None)
-
-            return True
+            return cls.future_graph.pop((x, y), None)
         else:
             return False
+
+    def remove_next_moves(cls, apart, x, y):
+        
+        current_x = x
+        current_y = y
+        
+        path = set()
+        checked = []
+        path.add((x, y))
+        checked.append((x, y))
+        
+        while checked:
+            coord = checked.pop()
+            if coord in cls.future_graph:
+                if (abs(coord[0] - current_x) + abs(coord[1] - current_y)) < apart:
+                    for element in cls.future_graph[coord]:
+                        if element not in path:
+                            path.add(element)
+                            checked.append(element)
+
+        while path:
+            coord = path.pop()
+            cls.remove_future_node(coord[0], coord[1])
 
 
 class Overseer(object):
@@ -346,6 +367,9 @@ def update_board(drivers, overseer, g):
     screen.fill(BLACK)
     draw_board()
 
+    driver_block_x = 0
+    driver_block_y = 0
+
     for driver in drivers:
 
         wall_up, wall_right, wall_down, wall_left = (False,) * 4
@@ -365,9 +389,13 @@ def update_board(drivers, overseer, g):
         if (update_driver_y, update_driver_x) not in g.graph_dict:
             return False
 
-        # Adds the brick and removes it from the graph
+        # Adds the brick 
         added_brick_x, added_brick_y = makeBrick(driver)
-        g.remove_node(added_brick_y, added_brick_x)
+        if driver != drivers[0]:
+            g.remove_node(added_brick_y, added_brick_x)
+        else:
+            driver_block_y = added_brick_y
+            driver_block_x = added_brick_x
 
         # If the driver isn't the user, then add some ai
         if drivers[0] != driver:
@@ -375,94 +403,21 @@ def update_board(drivers, overseer, g):
             g.copy_graph()
 
             free_path = True
-            future_x = normalize_x(drivers[0].rect.left)
-            future_y = normalize_y(drivers[0].rect.top)
+            user_x = normalize_x(drivers[0].rect.left)
+            user_y = normalize_y(drivers[0].rect.top)
+
+            apart = ((abs(user_x - update_driver_x) + abs(user_y - update_driver_y)) / 2)
+
+            if (user_x - update_driver_x) != 0 and (user_y - update_driver_y) != 0:
+                apart += 4
 
             # Almost too hard to explain this part in comments but basically
             # this is what makes the imaginary wall in front of the driver
             # the reason that it checks if the driver is close is to fix a specific
             # use case that will be too hard to explain in comments
             
-            if  drivers[0].dir == 0:
-
-                if abs(driver.rect.left - drivers[0].rect.left) > 20:
-                    while free_path:
-                        future_y -= 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-                if abs(driver.rect.top - drivers[0].rect.top) > 20:
-                    free_path = True
-                    future_y = normalize_y(drivers[0].rect.top)
-                    while free_path:
-                        future_x -= 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-                    free_path = True
-                    future_x = normalize_x(drivers[0].rect.left)
-                    while free_path:
-                        future_x += 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-            if  drivers[0].dir == 1:
-
-                if abs(driver.rect.top - drivers[0].rect.top) > 20:
-                    while free_path:
-                        future_x += 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-                if abs(driver.rect.left - drivers[0].rect.left) > 20:
-                    free_path = True
-                    future_x = normalize_x(drivers[0].rect.left)
-                    while free_path:
-                        future_y -= 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-                    future_y = normalize_y(drivers[0].rect.top)
-                    free_path = True
-                    while free_path:
-                        future_y += 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-            if  drivers[0].dir == 2:
-
-                if abs(driver.rect.left - drivers[0].rect.left) > 20:
-                    while free_path:
-                        future_y += 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-                if abs(driver.rect.top - drivers[0].rect.top) > 20:
-                    free_path = True
-                    future_y = normalize_y(drivers[0].rect.top)
-                    while free_path:
-                        future_x -= 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-                    free_path = True
-                    future_x = normalize_x(drivers[0].rect.left)
-                    while free_path:
-                        future_x += 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-            if  drivers[0].dir == 3:
-
-                if abs(driver.rect.top - drivers[0].rect.top) > 20:
-                    while free_path:
-                        future_x -= 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-                if abs(driver.rect.left - drivers[0].rect.left) > 20:
-                    free_path = True
-                    future_x = normalize_x(drivers[0].rect.left)
-                    while free_path:
-                        future_y -= 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
-                    free_path = True
-                    future_y = normalize_y(drivers[0].rect.top)
-                    while free_path:
-                        future_y += 1
-                        free_path = g.remove_future_node(future_y, future_x)
-
+            g.remove_next_moves(apart, user_y, user_x)
+            
             # Checks which sides have walls on them
             if (update_driver_y - 1, update_driver_x) not in g.future_graph:
                 wall_up = True
@@ -529,7 +484,7 @@ def update_board(drivers, overseer, g):
             if wall_right and driver.dir == 1:
                 flooding = "{}, {}, {}, {}".format(flood_up, flood_right, flood_down, flood_left)
                 print flooding
-
+                
                 if wall_up:
                     print "rightup"
                     driver.down()
@@ -579,6 +534,8 @@ def update_board(drivers, overseer, g):
 
         driver.update_draw()
 
+    g.remove_node(driver_block_y, driver_block_x)
+        
     pygame.display.flip()
 
     return True
