@@ -6,7 +6,6 @@ A pygame project based on the lightcycle games for Tron. While it is mostly work
 While the game is relatively efficient and fast, I am also looking for ways to make it increasingly faster. 
 
 ## Implementation 
-------
 
 Currently the board is represented by a strongly connected undirected graph using a dict data structure. 
 Each coordinate is represented by a tuple as a key in the dict. 
@@ -16,7 +15,6 @@ If a driver hits a coordinate not in the dict, then it crashed and the game rese
 
 
 ## AI
-------
 
 My favorite. Currently this is how the AI works. There are a few steps. Because the graph is represented using a dict, 
 getting a coord at any given time is constant time. Knowing this, every step of the way the AI driver checks each direction 
