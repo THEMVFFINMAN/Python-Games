@@ -5,12 +5,10 @@ lat = input()
 n = int(input())
 
 defibs = []
-for i in range(n):
-    defib = input()
-    defibs.append(defib.split(';'))
-
 distances = []
-for defib in defibs:
+for i in range(n):
+    defib = input().split(';')
+    defibs.append(defib)
     latdiff = float(defib[5].replace(',','.')) - float(lat.replace(',','.'))
     x = (float(defib[4].replace(',','.')) - float(lon.replace(',','.'))) * math.cos(latdiff/2)
     y = latdiff
