@@ -55,7 +55,7 @@ def mainMenu():
 			quit(1)
 
 def credits():
-	Credits = "\n   Author: JJ Lowe\n   Email: joshuajordanlowe@gmail.com\n   Github: THEMVFFINMAN\n\n"
+	Credits = "\n   Author: JJ Lowe\n   Email: guineapiggamesllc@gmail.com\n   Github: THEMVFFINMAN\n\n"
 	Credits = Credits + "    1. Main Menu \n"
 	Credits = Credits + "    2. Quit\n\n"
 	Credits = Credits + " >> "
